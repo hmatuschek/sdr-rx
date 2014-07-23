@@ -7,6 +7,7 @@
 
 #include "gui/spectrum.hh"
 #include "gui/spectrumview.hh"
+#include "gui/waterfallview.hh"
 #include "baseband.hh"
 
 // Forward declaration
@@ -122,6 +123,22 @@ class DemodulatorSpectrumView : public sdr::gui::SpectrumView
 public:
   DemodulatorSpectrumView(Demodulator *demodulator);
   virtual ~DemodulatorSpectrumView();
+
+protected:
+  virtual void paintEvent(QPaintEvent *evt);
+
+protected:
+  Demodulator *_demodulator;
+};
+
+
+class DemodulatorWaterFallView : public sdr::gui::WaterFallView
+{
+  Q_OBJECT
+
+public:
+  DemodulatorWaterFallView(Demodulator *demodulator);
+  virtual ~DemodulatorWaterFallView();
 
 protected:
   virtual void paintEvent(QPaintEvent *evt);

@@ -148,7 +148,8 @@ Demodulator::createCtrlView() {
 
 QWidget *
 Demodulator::createSpectrumView() {
-  DemodulatorSpectrumView *view = new DemodulatorSpectrumView(this);
+  //DemodulatorSpectrumView *view = new DemodulatorSpectrumView(this);
+  DemodulatorWaterFallView *view = new DemodulatorWaterFallView(this);
   QObject::connect(view, SIGNAL(click(double)), this, SLOT(setCenterFreq(double)));
   return view;
 }
@@ -212,6 +213,48 @@ DemodulatorSpectrumView::paintEvent(QPaintEvent *evt) {
   painter.restore();
 }
 
+
+/* ******************************************************************************************** *
+ * Implementation of DemodulatorWaterFallView
+ * ******************************************************************************************** */
+DemodulatorWaterFallView::DemodulatorWaterFallView(Demodulator *demodulator)
+  : gui::WaterFallView(demodulator), _demodulator(demodulator)
+{
+  QObject::connect(demodulator, SIGNAL(filterChanged()), this, SLOT(update()));
+}
+
+DemodulatorWaterFallView::~DemodulatorWaterFallView() {
+  // pass...
+}
+
+
+void
+DemodulatorWaterFallView::paintEvent(QPaintEvent *evt) {
+  gui::WaterFallView::paintEvent(evt);
+
+  QPainter painter(this);
+  painter.setRenderHint(QPainter::Antialiasing);
+  painter.save();
+
+  // Clip region to update
+  painter.setClipRect(evt->rect());
+
+  // Draw a thin line at the center frequency
+  QPen pen(QColor(0,0,255));
+  painter.setPen(pen);
+  double dfdx = _demodulator->sampleRate()/(this->width());
+  double x = (_demodulator->centerFreq()+_demodulator->sampleRate()/2)/dfdx;
+  painter.drawLine(x, 0, x, this->height());
+
+  // Draw filter area:
+  QRect filter; QColor color(0,0,255, 64);
+  double x1 = (_demodulator->filterLower()+_demodulator->sampleRate()/2)/dfdx;
+  double x2 = (_demodulator->filterUpper()+_demodulator->sampleRate()/2)/dfdx;
+  filter = QRect(x1, 0, x2-x1, this->height());
+  painter.fillRect(filter, color);
+
+  painter.restore();
+}
 
 
 /* ******************************************************************************************** *
