@@ -218,7 +218,7 @@ DemodulatorSpectrumView::paintEvent(QPaintEvent *evt) {
  * Implementation of DemodulatorWaterFallView
  * ******************************************************************************************** */
 DemodulatorWaterFallView::DemodulatorWaterFallView(Demodulator *demodulator)
-  : gui::WaterFallView(demodulator), _demodulator(demodulator)
+  : gui::WaterFallView(demodulator, 200), _demodulator(demodulator)
 {
   QObject::connect(demodulator, SIGNAL(filterChanged()), this, SLOT(update()));
 }
