@@ -1,0 +1,3 @@
+[submodule "libsdr"]
+	path = libsdr
+	url = https://github.com/hmatuschek/libsdr.git
