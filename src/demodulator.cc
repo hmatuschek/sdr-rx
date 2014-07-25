@@ -16,7 +16,7 @@ Demodulator::Demodulator(Receiver *receiver) :
 {
   // Assemble processing chain
   _agc = new AGC< std::complex<int16_t> >();
-  _filter_node = new IQBaseBand<int16_t>(_Fc, _Fu-_Fl, 16, 1, 8000.0);
+  _filter_node = new IQBaseBand<int16_t>(_Fc, _Fu-_Fl, 15, 1, 8000.0);
   _ssb_demod = new sdr::USBDemod<int16_t>();
   _am_demod  = new sdr::AMDemod<int16_t>();
   _fm_demod  = new sdr::FMDemod<int16_t>();

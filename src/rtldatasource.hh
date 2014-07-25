@@ -4,6 +4,7 @@
 #include "source.hh"
 #include "rtlsource.hh"
 #include "utils.hh"
+#include "autocast.hh"
 
 #include <QLabel>
 #include <QComboBox>
@@ -24,18 +25,23 @@ public:
 
   bool isActive() const;
 
+  double frequency() const;
+  void setFrequency(double freq);
+
   bool agcEnabled() const;
   void enableAGC(bool enable);
 
   double gain() const;
   void setGain(double gain);
 
+  void setDevice(size_t idx);
+
   static size_t numDevices();
   static std::string deviceName(size_t idx);
 
 protected:
   sdr::RTLSource *_device;
-  sdr::Cast< std::complex<int8_t>, std::complex<int16_t> > *_to_int16;
+  sdr::AutoCast<std::complex<int16_t> > *_to_int16;
 };
 
 
@@ -49,6 +55,7 @@ public:
 
 protected slots:
   void onDeviceSelected(int idx);
+  void onFrequencyChanged(QString value);
   void onSampleRateSelected(int idx);
   void onGainChanged(QString value);
   void onAGCToggled(bool enabled);
@@ -58,6 +65,7 @@ protected:
   RTLDataSource *_source;
 
   QComboBox *_devices;
+  QLineEdit *_freq;
   QComboBox *_sampleRates;
   QLineEdit *_gain;
   QCheckBox *_agc;
