@@ -14,6 +14,8 @@
 #include "baseband.hh"
 #include "psk31.hh"
 #include "demod.hh"
+#include "firfilter.hh"
+
 
 // Forward declaration
 class Receiver;
@@ -58,7 +60,6 @@ public:
 
 signals:
   void filterChanged();
-  void demodulatorChanged();
 
 public slots:
   void enableAGC(bool enable);
@@ -95,7 +96,6 @@ public:
 
 protected slots:
   void onDemodSelected(int idx);
-  void onDemodulatorChanged();
 
   void onAGCToggled(bool enabled);
   void onAGCTauChanged(QString value);
@@ -383,6 +383,7 @@ protected:
   sdr::Proxy _input_proxy;
   sdr::FreqShift<int16_t> _freq_shift;
   sdr::USBDemod<int16_t> _audio_demod;
+  sdr::FIRLowPass< std::complex<int16_t> > _bpsk_filter;
   sdr::BPSK31<int16_t>   _bpsk;
   sdr::Varicode          _decode;
   QString _text_buffer;

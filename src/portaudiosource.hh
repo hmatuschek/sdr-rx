@@ -1,8 +1,9 @@
 #ifndef __SDR_RX_PORTAUDIOSOURCE_HH__
 #define __SDR_RX_PORTAUDIOSOURCE_HH__
 
-#include "sdr.hh"
+#include "portaudio.hh"
 #include "source.hh"
+#include "utils.hh"
 #include <QObject>
 #include <QWidget>
 #include <QLabel>

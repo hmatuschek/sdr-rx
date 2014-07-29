@@ -1,7 +1,7 @@
 #ifndef __SDR_RX_FILESOURCE_HH__
 #define __SDR_RX_FILESOURCE_HH__
 
-#include "sdr.hh"
+#include "wavfile.hh"
 #include "source.hh"
 #include "autocast.hh"
 #include <QObject>

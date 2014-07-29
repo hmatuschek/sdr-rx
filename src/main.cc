@@ -1,4 +1,3 @@
-#include "sdr.hh"
 #include "gui/gui.hh"
 
 #include <QApplication>

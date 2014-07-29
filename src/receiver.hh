@@ -2,7 +2,6 @@
 #define __SDR_RX_RECEIVER_HH__
 
 #include <QObject>
-#include "sdr.hh"
 
 #include "source.hh"
 #include "demodulator.hh"
