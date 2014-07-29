@@ -5,9 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 include(InstallHeadersWithDirectory)
 
 find_package(Qt5Core REQUIRED)
-find_package(Qt5Declarative REQUIRED)
 find_package(Qt5Widgets REQUIRED)
-find_package(Qt5LinguistTools REQUIRED)
 
 find_package(FFTW REQUIRED)
 find_package(FFTWSingle REQUIRED)
