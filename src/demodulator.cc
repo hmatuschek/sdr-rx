@@ -771,7 +771,7 @@ BPSK31DemodulatorView::BPSK31DemodulatorView(BPSK31Demodulator *demod, QWidget *
   _filterWidth->setValidator(validator);
 
   _text = new QPlainTextEdit();
-  _text->setEnabled(false);
+  _text->setReadOnly(true);
 
   QVBoxLayout *layout = new QVBoxLayout();
   QFormLayout *form_layout = new QFormLayout();
