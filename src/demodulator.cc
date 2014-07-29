@@ -6,20 +6,19 @@
 #include <QComboBox>
 #include <QTimer>
 #include <QFormLayout>
+#include <QTextEdit>
+
 
 using namespace sdr;
 
 
-Demodulator::Demodulator(Receiver *receiver) :
-  gui::Spectrum(2, 1024, 5, receiver), _receiver(receiver),
-  _Fc(0), _Fl(-2000), _Fu(2000), _demod(DEMOD_SSB)
+DemodulatorCtrl::DemodulatorCtrl(Receiver *receiver) :
+  gui::Spectrum(2, 1024, 5, receiver), _receiver(receiver)
 {
   // Assemble processing chain
   _agc = new AGC< std::complex<int16_t> >();
-  _filter_node = new IQBaseBand<int16_t>(_Fc, _Fu-_Fl, 15, 1, 48000.0);
-  _ssb_demod = new sdr::USBDemod<int16_t>();
-  _am_demod  = new sdr::AMDemod<int16_t>();
-  _fm_demod  = new sdr::FMDemod<int16_t>();
+  _filter_node = new IQBaseBand<int16_t>(0, 2000, 15, 1, 16000.0);
+  _demodObj = 0;
   _audio_source = new sdr::Proxy();
 
   _agc->connect(_filter_node, true);
@@ -27,72 +26,74 @@ Demodulator::Demodulator(Receiver *receiver) :
   _agc->enable(false);
   _agc->setGain(1);
 
-  setDemod(_demod);
+  setDemod(DEMOD_USB);
 }
 
 
-Demodulator::~Demodulator() {
+DemodulatorCtrl::~DemodulatorCtrl() {
   delete _agc;
   delete _filter_node;
-  delete _ssb_demod;
-  delete _am_demod;
   delete _audio_source;
+  if (_demodObj) {
+    delete _demodObj;
+  }
 }
 
 
 bool
-Demodulator::isAGCEnabled() const {
+DemodulatorCtrl::isAGCEnabled() const {
   return _agc->enabled();
 }
 
 double
-Demodulator::gain() const {
+DemodulatorCtrl::gain() const {
   return 20*std::log10(_agc->gain());
 }
 
 void
-Demodulator::setGain(double gain) {
+DemodulatorCtrl::setGain(double gain) {
   _agc->setGain(pow(10, gain/20));
 }
 
 
 double
-Demodulator::agcTime() const {
+DemodulatorCtrl::agcTime() const {
   return _agc->tau();
 }
 
 void
-Demodulator::setAGCTime(double tau) {
+DemodulatorCtrl::setAGCTime(double tau) {
   _agc->setTau(tau);
 }
 
 
 void
-Demodulator::enableAGC(bool enable) {
+DemodulatorCtrl::enableAGC(bool enable) {
   _agc->enable(enable);
 }
 
 void
-Demodulator::setCenterFreq(double f) {
-  // Update filter boundaries
-  double Fl = _Fl-_Fc+f;
-  double Fu = _Fu-_Fc+f;
-  _Fc = f;
-  _filter_node->setCenterFrequency(_Fc);
-  setFilter(Fl,Fu);
+DemodulatorCtrl::setCenterFreq(double f) {
+  double dF = this->filterFrequency();
+  _filter_node->setCenterFrequency(f);
+  this->setFilterFrequency(dF);
 }
 
 void
-Demodulator::setFilter(double Fl, double Fu) {
-  _Fl = Fl; _Fu = Fu; double width = _Fu-_Fl;
-  _filter_node->setFilterFrequency(_Fl+width/2);
-  _filter_node->setFilterWidth(width);
+DemodulatorCtrl::setFilterFrequency(double f) {
+  _filter_node->setFilterFrequency(_filter_node->centerFrequency() + f);
+  emit filterChanged();
+}
+
+void
+DemodulatorCtrl::setFilterWidth(double w) {
+  _filter_node->setFilterWidth(w);
 
   bool was_running = _receiver->isRunning();
   if (was_running) { _receiver->stop(); }
   // Update resampling of IQBaseBand node. Ensures that the output sample-rate is at least
   // filter width and >= 16000 Hz
-  double oFs = std::max(width, 16000.0);
+  double oFs = std::max(w, 16000.0);
   _filter_node->setOutputSampleRate(oFs);
   if (was_running) { _receiver->start(); }
 
@@ -101,53 +102,47 @@ Demodulator::setFilter(double Fl, double Fu) {
 
 
 void
-Demodulator::setDemod(Demod demod) {
+DemodulatorCtrl::setDemod(Demod demod) {
   bool was_running = _receiver->isRunning();
   if (was_running) { _receiver->stop(); }
-  // Unlink current demodulator
-  switch (_demod) {
-  case DEMOD_SSB:
-    _filter_node->disconnect(_ssb_demod);
-    _ssb_demod->disconnect(_audio_source);
-    break;
-  case DEMOD_AM:
-    _filter_node->disconnect(_am_demod);
-    _am_demod->disconnect(_audio_source);
-    break;
-  case DEMOD_FM:
-    _filter_node->disconnect(_fm_demod);
-    _fm_demod->disconnect(_audio_source);
-    break;
-  }
-  _demod = demod;
-  // Link new demodulator
-  switch (_demod) {
-  case DEMOD_SSB:
-    _filter_node->connect(_ssb_demod, true);
-    _ssb_demod->connect(_audio_source, true);
-    break;
-  case DEMOD_AM:
-    _filter_node->connect(_am_demod, true);
-    _am_demod->connect(_audio_source, true);
-    break;
-  case DEMOD_FM:
-    _filter_node->connect(_fm_demod, true);
-    _fm_demod->connect(_audio_source, true);
-    break;
 
+  // Unlink current demodulator
+  if (_demodObj) {
+    _filter_node->disconnect(_demodObj->sink());
+    _demodObj->audioSource()->disconnect(_audio_source);
+    delete _demodObj; _demodObj = 0;
   }
+
+  switch (demod) {
+  case DEMOD_AM:     _demodObj = new AMDemodulator(this); break;
+  case DEMOD_WFM:    _demodObj = new WFMDemodulator(this); break;
+  case DEMOD_NFM:    _demodObj = new NFMDemodulator(this); break;
+  case DEMOD_USB:    _demodObj = new USBDemodulator(this); break;
+  case DEMOD_LSB:    _demodObj = new LSBDemodulator(this); break;
+  case DEMOD_CW:     _demodObj = new CWDemodulator(this); break;
+  case DEMOD_BPSK31: _demodObj = new BPSK31Demodulator(this); break;
+  }
+
+  // Link new demodulator
+  _filter_node->connect(_demodObj->sink());
+  _demodObj->audioSource()->connect(_audio_source);
+
+  // Signal new demodulator
+  emit demodulatorChanged();
+
+  // Restart queue if it was running...
   if (was_running) { _receiver->start(); }
 }
 
 
 QWidget *
-Demodulator::createCtrlView() {
+DemodulatorCtrl::createCtrlView() {
   return new DemodulatorCtrlView(this);
 }
 
 
 QWidget *
-Demodulator::createSpectrumView() {
+DemodulatorCtrl::createSpectrumView() {
   //DemodulatorSpectrumView *view = new DemodulatorSpectrumView(this);
   DemodulatorWaterFallView *view = new DemodulatorWaterFallView(this);
   QObject::connect(view, SIGNAL(click(double)), this, SLOT(setCenterFreq(double)));
@@ -159,7 +154,7 @@ Demodulator::createSpectrumView() {
 /* ******************************************************************************************** *
  * Implementation of DemodulatorSpectrumView
  * ******************************************************************************************** */
-DemodulatorSpectrumView::DemodulatorSpectrumView(Demodulator *demodulator)
+DemodulatorSpectrumView::DemodulatorSpectrumView(DemodulatorCtrl *demodulator)
   : gui::SpectrumView(demodulator), _demodulator(demodulator)
 {
   QObject::connect(demodulator, SIGNAL(filterChanged()), this, SLOT(update()));
@@ -217,7 +212,7 @@ DemodulatorSpectrumView::paintEvent(QPaintEvent *evt) {
 /* ******************************************************************************************** *
  * Implementation of DemodulatorWaterFallView
  * ******************************************************************************************** */
-DemodulatorWaterFallView::DemodulatorWaterFallView(Demodulator *demodulator)
+DemodulatorWaterFallView::DemodulatorWaterFallView(DemodulatorCtrl *demodulator)
   : gui::WaterFallView(demodulator, 200), _demodulator(demodulator)
 {
   QObject::connect(demodulator, SIGNAL(filterChanged()), this, SLOT(update()));
@@ -260,18 +255,18 @@ DemodulatorWaterFallView::paintEvent(QPaintEvent *evt) {
 /* ******************************************************************************************** *
  * Implementation of DemodulatorCtrlView
  * ******************************************************************************************** */
-DemodulatorCtrlView::DemodulatorCtrlView(Demodulator *demodulator, QWidget *parent)
+DemodulatorCtrlView::DemodulatorCtrlView(DemodulatorCtrl *demodulator, QWidget *parent)
   : QWidget(parent), _demodulator(demodulator)
 {
-  QComboBox *mod = new QComboBox();
-  mod->addItem("AM");
-  mod->addItem("WFM");
-  mod->addItem("NFM");
-  mod->addItem("DSB");
-  mod->addItem("LSB");
-  mod->addItem("USB");
-  mod->addItem("CW");
-  this->onModSelected(0);
+  _demodList = new QComboBox();
+  _demodList->addItem("AM", DemodulatorCtrl::DEMOD_AM);
+  _demodList->addItem("WFM", DemodulatorCtrl::DEMOD_WFM);
+  _demodList->addItem("NFM", DemodulatorCtrl::DEMOD_NFM);
+  _demodList->addItem("USB", DemodulatorCtrl::DEMOD_USB);
+  _demodList->addItem("LSB", DemodulatorCtrl::DEMOD_LSB);
+  _demodList->addItem("CW", DemodulatorCtrl::DEMOD_CW);
+  _demodList->addItem("BPSK31", DemodulatorCtrl::DEMOD_BPSK31);
+  _demodList->setCurrentIndex(3); this->onDemodSelected(3);
 
   _gain  = new QLineEdit();
   QDoubleValidator *gain_val = new QDoubleValidator();
@@ -297,90 +292,47 @@ DemodulatorCtrlView::DemodulatorCtrlView(Demodulator *demodulator, QWidget *pare
   _centerFreq->setValidator(fc_val);
   _centerFreq->setText(QString("%1").arg(_demodulator->centerFreq()));
 
-  _lowerFreq = new QLineEdit();
-  QDoubleValidator *fl_val = new QDoubleValidator();
-  if (_demodulator->isInputReal()) { fl_val->setBottom(0); fl_val->setTop(_demodulator->sampleRate()/2); }
-  else { fl_val->setBottom(-_demodulator->sampleRate()/2); fl_val->setTop(_demodulator->sampleRate()/2); }
-  _lowerFreq->setValidator(fl_val);
-  _lowerFreq->setText(QString("%1").arg(_demodulator->filterLower()));
-
-  _upperFreq = new QLineEdit();
-  QDoubleValidator *fu_val = new QDoubleValidator();
-  if (_demodulator->isInputReal()) { fu_val->setBottom(0); fu_val->setTop(_demodulator->sampleRate()/2); }
-  else { fu_val->setBottom(-_demodulator->sampleRate()/2); fu_val->setTop(_demodulator->sampleRate()/2); }
-  _upperFreq->setValidator(fu_val);
-  _upperFreq->setText(QString("%1").arg(_demodulator->filterUpper()));
-
   QTimer *gainUpdate = new QTimer(this);
   gainUpdate->setInterval(500);
   gainUpdate->setSingleShot(false);
   gainUpdate->start();
 
-  QObject::connect(mod, SIGNAL(activated(int)), this, SLOT(onModSelected(int)));
+  QObject::connect(_demodList, SIGNAL(activated(int)), this, SLOT(onDemodSelected(int)));
   QObject::connect(_agc, SIGNAL(toggled(bool)), SLOT(onAGCToggled(bool)));
   QObject::connect(_agc_tau, SIGNAL(textEdited(QString)), this, SLOT(onAGCTauChanged(QString)));
   QObject::connect(_gain, SIGNAL(textEdited(QString)), SLOT(onGainChanged(QString)));
   QObject::connect(gainUpdate, SIGNAL(timeout()), SLOT(onUpdateGain()));
   QObject::connect(_centerFreq, SIGNAL(textEdited(QString)), this, SLOT(onCenterFreqChanged(QString)));
-  QObject::connect(_lowerFreq, SIGNAL(textEdited(QString)), this, SLOT(onLowerFreqChanged(QString)));
-  QObject::connect(_upperFreq, SIGNAL(textEdited(QString)), this, SLOT(onUpperFreqChanged(QString)));
-  QObject::connect(_demodulator, SIGNAL(filterChanged()), this, SLOT(onUpdateFilter()));
+  QObject::connect(_demodulator, SIGNAL(filterChanged()), this, SLOT(onFilterChanged()));
+  QObject::connect(_demodulator, SIGNAL(demodulatorChanged()), this, SLOT(onDemodulatorChanged()));
+
 
   QFormLayout *side = new QFormLayout();
-  side->addRow("Modulation", mod);
+  side->addRow("Modulation", _demodList);
   side->addRow("Gain", _gain);
   side->addWidget(_agc);
   side->addRow("AGC time", _agc_tau);
   side->addRow("Center freq.", _centerFreq);
-  side->addRow("Lower freq.", _lowerFreq);
-  side->addRow("Upper freq.", _upperFreq);
 
-  this->setLayout(side);
+  _layout = new QVBoxLayout();
+  _layout->addLayout(side, 0);
+  // If there is a demodulator selected already:
+  if (_demodulator->demod()) {
+    _layout->addWidget(_demodulator->demod()->createView());
+  }
+  this->setLayout(_layout);
 }
 
 
 void
-DemodulatorCtrlView::onModSelected(int idx) {
-  if (0 == idx) { // AM
-      double fc   = _demodulator->centerFreq();
-      double fmin = fc-5000, fmax = fc+5000;
-      _demodulator->setFilter(fmin, fmax);
-      _demodulator->setDemod(Demodulator::DEMOD_AM);
-  } else if (1 == idx) { // WFM
-    double fc   = _demodulator->centerFreq();
-    double fmin = fc-100000, fmax = fc+100000;
-    _demodulator->setFilter(fmin, fmax);
-    _demodulator->setDemod(Demodulator::DEMOD_FM);
-  } else if (2 == idx) { // NFM
-    double fc   = _demodulator->centerFreq();
-    double fmin = fc-6000, fmax = fc+6000;
-    _demodulator->setFilter(fmin, fmax);
-    _demodulator->setDemod(Demodulator::DEMOD_FM);
-  } else if (3 == idx) { // DSB
-    double fc   = _demodulator->centerFreq();
-    double fmin = fc-2000, fmax = fc+2000;
-    _demodulator->setFilter(fmin, fmax);
-    _demodulator->setDemod(Demodulator::DEMOD_SSB);
-  } else if (4 == idx) { // LSB
-    double fc   = _demodulator->centerFreq();
-    double fmin = fc-2000, fmax = fc-100;
-    _demodulator->setFilter(fmin, fmax);
-    _demodulator->setDemod(Demodulator::DEMOD_SSB);
-  } else if (5 == idx) { // USB
-    double fc   = _demodulator->centerFreq();
-    double fmin = fc+100, fmax = fc+2000;
-    _demodulator->setFilter(fmin, fmax);
-    _demodulator->setDemod(Demodulator::DEMOD_SSB);
-  } else if (6 == idx) { // CW
-    double fc   = _demodulator->centerFreq();
-    double fmin = fc+600, fmax = fc+900;
-    _demodulator->setFilter(fmin, fmax);
-    _demodulator->setDemod(Demodulator::DEMOD_SSB);
-  } else {
-    LogMessage msg(LOG_WARNING);
-    msg << "Unkwon demodulator index: " << idx
-        << " not in range [0,6]";
-    Logger::get().log(msg);
+DemodulatorCtrlView::onDemodSelected(int idx) {
+  _demodulator->setDemod(DemodulatorCtrl::Demod(_demodList->itemData(idx).toUInt()));
+}
+
+void
+DemodulatorCtrlView::onDemodulatorChanged() {
+  if (_demodulator->demod()) {
+    _layout->addWidget(_demodulator->demod()->createView());
   }
 }
 
@@ -419,35 +371,433 @@ DemodulatorCtrlView::onUpdateGain() {
 }
 
 void
-DemodulatorCtrlView::onUpdateFilter() {
-  _centerFreq->setText(QString("%1").arg(_demodulator->centerFreq()));
-  _lowerFreq->setText(QString("%1").arg(_demodulator->filterLower()));
-  _upperFreq->setText(QString("%1").arg(_demodulator->filterUpper()));
+DemodulatorCtrlView::onCenterFreqChanged(QString value) {
+  bool ok; double f = value.toDouble(&ok);
+  if (ok) { _demodulator->setCenterFreq(f); }
+}
+
+void
+DemodulatorCtrlView::onFilterChanged() {
+  _centerFreq->setText(QString::number(_demodulator->centerFreq()));
+}
+
+/* ******************************************************************************************** *
+ * Implementation of DemodInterface
+ * ******************************************************************************************** */
+DemodInterface::DemodInterface() {
+  // pass...
+}
+
+DemodInterface::~DemodInterface() {
+  // pass...
 }
 
 
+/* ******************************************************************************************** *
+ * Implementation of AMDemodulator and view
+ * ******************************************************************************************** */
+AMDemodulator::AMDemodulator(DemodulatorCtrl *ctrl)
+  : QObject(), DemodInterface(), _ctrl(ctrl), _demod()
+{
+  // First configure base-band for AM reception
+  _ctrl->setFilterFrequency(0.0);
+  _ctrl->setFilterWidth(3000);
+}
+
+AMDemodulator::~AMDemodulator() {
+  if (0 != _view) { _view->deleteLater(); _view = 0; }
+}
+
+
+double
+AMDemodulator::filterWidth() const {
+  return _ctrl->filterWidth();
+}
+
 void
-DemodulatorCtrlView::onCenterFreqChanged(QString value) {
-  double fc   = _demodulator->centerFreq();
-  double fmin = _demodulator->filterLower();
-  double fmax = _demodulator->filterUpper();
-  bool ok; double f = value.toDouble(&ok);
-  if (ok) {
-    _demodulator->setCenterFreq(f);
-    _demodulator->setFilter(fmin-fc+f, fmax-fc+f);
+AMDemodulator::setFilterWidth(double width) {
+  if (width > 0) {
+    _ctrl->setFilterWidth(width);
   }
 }
 
-void
-DemodulatorCtrlView::onLowerFreqChanged(QString value) {
-  double fmax = _demodulator->filterUpper();
-  bool ok; double f = value.toDouble(&ok);
-  if (ok) { _demodulator->setFilter(f,fmax); }
+sdr::SinkBase *
+AMDemodulator::sink() {
+  return &_demod;
+}
+
+sdr::Source *
+AMDemodulator::audioSource() {
+  return &_demod;
+}
+
+QWidget *
+AMDemodulator::createView() {
+  if (0 == _view) {
+    _view = new AMDemodulatorView(this);
+    QObject::connect(_view, SIGNAL(destroyed()), this, SLOT(_onViewDeleted()));
+  }
+  return _view;
 }
 
 void
-DemodulatorCtrlView::onUpperFreqChanged(QString value) {
-  double fmin = _demodulator->filterLower();
-  bool ok; double f = value.toDouble(&ok);
-  if (ok) { _demodulator->setFilter(fmin,f); }
+AMDemodulator::_onViewDeleted() {
+  _view = 0;
+}
+
+
+AMDemodulatorView::AMDemodulatorView(AMDemodulator *demod, QWidget *parent)
+  : QWidget(parent), _demod(demod)
+{
+  _filterWidth = new QLineEdit(QString::number(_demod->filterWidth()));
+  QDoubleValidator *validator = new QDoubleValidator();
+  validator->setBottom(0);
+  _filterWidth->setValidator(validator);
+
+  QFormLayout *layout = new QFormLayout();
+  layout->addRow("Filter width", _filterWidth);
+  setLayout(layout);
+
+  QObject::connect(_filterWidth, SIGNAL(textEdited(QString)),
+                   this, SLOT(_onFilterWidthChanged(QString)));
+}
+
+AMDemodulatorView::~AMDemodulatorView() {
+  // pass...
+}
+
+void
+AMDemodulatorView::_onFilterWidthChanged(QString value) {
+  _demod->setFilterWidth(value.toDouble());
+}
+
+
+/* ******************************************************************************************** *
+ * Implementation of FMDemodulator and view
+ * ******************************************************************************************** */
+FMDemodulator::FMDemodulator(DemodulatorCtrl *demod)
+  : QObject(), DemodInterface(), _ctrl(demod), _demod(), _view(0)
+{
+  // pass...
+}
+
+FMDemodulator::~FMDemodulator() {
+  if (0 != _view) { _view->deleteLater(); _view = 0; }
+}
+
+double
+FMDemodulator::filterWidth() const {
+  return _ctrl->filterWidth();
+}
+
+void
+FMDemodulator::setFilterWidth(double width) {
+  _ctrl->setFilterWidth(width);
+}
+
+sdr::SinkBase *
+FMDemodulator::sink() {
+  return &_demod;
+}
+
+sdr::Source *
+FMDemodulator::audioSource() {
+  return &_demod;
+}
+
+QWidget *
+FMDemodulator::createView() {
+  if (0 == _view) {
+    _view = new FMDemodulatorView(this);
+    QObject::connect(_view, SIGNAL(destroyed()), this, SLOT(_onViewDeleted()));
+  }
+  return _view;
+}
+
+void
+FMDemodulator::_onViewDeleted() {
+  _view = 0;
+}
+
+WFMDemodulator::WFMDemodulator(DemodulatorCtrl *demod)
+  : FMDemodulator(demod)
+{
+  // Configure BaseBand for WFM RX:
+  _ctrl->setFilterFrequency(0.0);
+  _ctrl->setFilterWidth(100000.0);
+}
+
+WFMDemodulator::~WFMDemodulator() {
+  // pass...
+}
+
+NFMDemodulator::NFMDemodulator(DemodulatorCtrl *demod)
+  : FMDemodulator(demod)
+{
+  // Configure BaseBand for NFM RX:
+  _ctrl->setFilterFrequency(0.0);
+  _ctrl->setFilterWidth(5000.0);
+}
+
+NFMDemodulator::~NFMDemodulator() {
+  // pass...
+}
+
+
+FMDemodulatorView::FMDemodulatorView(FMDemodulator *demod, QWidget *parent)
+  : QWidget(parent), _demod(demod)
+{
+  _filterWidth = new QLineEdit(QString::number(_demod->filterWidth()));
+  QDoubleValidator *validator = new QDoubleValidator();
+  validator->setBottom(0);
+  _filterWidth->setValidator(validator);
+
+  QFormLayout *layout = new QFormLayout();
+  layout->addRow("Filter width", _filterWidth);
+  setLayout(layout);
+
+  QObject::connect(_filterWidth, SIGNAL(textEdited(QString)),
+                   this, SLOT(_onFilterWidthChanged(QString)));
+}
+
+FMDemodulatorView::~FMDemodulatorView() {
+  // pass...
+}
+
+void
+FMDemodulatorView::_onFilterWidthChanged(QString value) {
+  _demod->setFilterWidth(value.toDouble());
+}
+
+
+/* ******************************************************************************************** *
+ * Implementation of SSBDemodulator and view
+ * ******************************************************************************************** */
+SSBDemodulator::SSBDemodulator(DemodulatorCtrl *ctrl, QObject *parent)
+  : QObject(parent), _ctrl(ctrl), _demod(), _view(0)
+{
+  // pass...
+}
+
+SSBDemodulator::~SSBDemodulator() {
+  if (_view) { _view->deleteLater(); _view = 0; }
+}
+
+
+double
+SSBDemodulator::filterWidth() const {
+  return _ctrl->filterWidth();
+}
+
+void
+SSBDemodulator::setFilterWidth(double width) {
+  _ctrl->setFilterWidth(width);
+}
+
+sdr::SinkBase *
+SSBDemodulator::sink() {
+  return &_demod;
+}
+
+sdr::Source *
+SSBDemodulator::audioSource() {
+  return &_demod;
+}
+
+QWidget *
+SSBDemodulator::createView() {
+  if (0 == _view) {
+    _view = new SSBDemodulatorView(this);
+    QObject::connect(_view, SIGNAL(destroyed()), this, SLOT(_onViewDeleted()));
+  }
+  return _view;
+}
+
+void
+SSBDemodulator::_onViewDeleted() {
+  _view = 0;
+}
+
+USBDemodulator::USBDemodulator(DemodulatorCtrl *ctrl, QObject *parent)
+  : SSBDemodulator(ctrl, parent)
+{
+  // Configure BaseBand for SSB reception
+  _ctrl->setFilterWidth(2000);
+  _ctrl->setFilterFrequency(1100);
+}
+
+USBDemodulator::~USBDemodulator() {
+  // pass...
+}
+
+LSBDemodulator::LSBDemodulator(DemodulatorCtrl *ctrl, QObject *parent)
+  : SSBDemodulator(ctrl, parent)
+{
+  // Configure BaseBand for SSB reception
+  _ctrl->setFilterWidth(2000);
+  _ctrl->setFilterFrequency(-1100);
+}
+
+LSBDemodulator::~LSBDemodulator() {
+  // pass...
+}
+
+CWDemodulator::CWDemodulator(DemodulatorCtrl *ctrl, QObject *parent)
+  : SSBDemodulator(ctrl, parent)
+{
+  // Configure BaseBand for CW reception
+  _ctrl->setFilterWidth(200);
+  _ctrl->setFilterFrequency(700);
+}
+
+CWDemodulator::~CWDemodulator() {
+  // pass...
+}
+
+
+SSBDemodulatorView::SSBDemodulatorView(SSBDemodulator *demod, QWidget *parent)
+  : QWidget(parent), _demod(demod)
+{
+  _filterWidth = new QLineEdit(QString::number(_demod->filterWidth()));
+  QDoubleValidator *validator = new QDoubleValidator();
+  validator->setBottom(0);
+  _filterWidth->setValidator(validator);
+
+  QFormLayout *layout = new QFormLayout();
+  layout->addRow("Filter width", _filterWidth);
+  setLayout(layout);
+
+  QObject::connect(_filterWidth, SIGNAL(textEdited(QString)),
+                   this, SLOT(_onFilterWidthChanged(QString)));
+}
+
+SSBDemodulatorView::~SSBDemodulatorView() {
+  // pass...
+}
+
+void
+SSBDemodulatorView::_onFilterWidthChanged(QString value) {
+  _demod->setFilterWidth(value.toDouble());
+}
+
+
+/* ******************************************************************************************** *
+ * Implementation of BPSKDemodulator and view
+ * ******************************************************************************************** */
+BPSK31Demodulator::BPSK31Demodulator(DemodulatorCtrl *ctrl, QObject *parent)
+  : QObject(parent), sdr::Sink<uint8_t>(),
+    _ctrl(ctrl), _input_proxy(), _freq_shift(700.0), _audio_demod(), _bpsk(), _decode(),
+    _text_buffer(""), _view(0)
+{
+  // Configure BaseBand to RX BPSK31 stuff
+  _ctrl->setFilterFrequency(0);
+  _ctrl->setFilterWidth(200);
+
+  // Connect decoder and audio path
+  _input_proxy.connect(&_freq_shift);
+  _input_proxy.connect(&_bpsk);
+  _freq_shift.connect(&_audio_demod, true);
+  _bpsk.connect(&_decode, true);
+  _decode.connect(this, true);
+}
+
+BPSK31Demodulator::~BPSK31Demodulator() {
+  if (_view) { _view->deleteLater(); _view = 0; }
+}
+
+double
+BPSK31Demodulator::filterWidth() const {
+  return _ctrl->filterWidth();
+}
+
+void
+BPSK31Demodulator::setFilterWidth(double width) {
+  _ctrl->setFilterWidth(width);
+}
+
+sdr::SinkBase *
+BPSK31Demodulator::sink() {
+  return &_input_proxy;
+}
+
+sdr::Source *
+BPSK31Demodulator::audioSource() {
+  return &_audio_demod;
+}
+
+QWidget *
+BPSK31Demodulator::createView() {
+  if (0 == _view) {
+    _view = new BPSK31DemodulatorView(this);
+    QObject::connect(_view, SIGNAL(destroyed()), this, SLOT(_onViewDeleted()));
+  }
+  return _view;
+}
+
+void
+BPSK31Demodulator::config(const Config &src_cfg) {
+  // pass...
+}
+
+void
+BPSK31Demodulator::process(const sdr::Buffer<uint8_t> &buffer, bool allow_overwrite) {
+  for (size_t i=0; i<buffer.size(); i++) {
+    _text_buffer.append(char(buffer[i]));
+  }
+  emit textReceived();
+}
+
+const QString &
+BPSK31Demodulator::text() const {
+  return _text_buffer;
+}
+
+void
+BPSK31Demodulator::clearText() {
+  _text_buffer = "";
+}
+
+void
+BPSK31Demodulator::_onViewDeleted() {
+  _view = 0;
+}
+
+
+BPSK31DemodulatorView::BPSK31DemodulatorView(BPSK31Demodulator *demod, QWidget *parent)
+  : QWidget(parent), _demod(demod)
+{
+  _filterWidth = new QLineEdit(QString::number(_demod->filterWidth()));
+  QDoubleValidator *validator = new QDoubleValidator();
+  validator->setBottom(0);
+  _filterWidth->setValidator(validator);
+
+  _text = new QPlainTextEdit();
+  _text->setEnabled(false);
+
+  QVBoxLayout *layout = new QVBoxLayout();
+  QFormLayout *form_layout = new QFormLayout();
+  form_layout->addRow("Filter width", _filterWidth);
+  layout->addLayout(form_layout, 0);
+  layout->addWidget(_text,1);
+
+  setLayout(layout);
+
+  QObject::connect(_filterWidth, SIGNAL(textEdited(QString)),
+                   this, SLOT(_onFilterWidthChanged(QString)));
+  QObject::connect(_demod, SIGNAL(textReceived()), this, SLOT(_onTextReceived()));
+}
+
+BPSK31DemodulatorView::~BPSK31DemodulatorView() {
+// pass...
+}
+
+void
+BPSK31DemodulatorView::_onTextReceived() {
+  QString text = _demod->text(); _demod->clearText();
+  _text->insertPlainText(text);
+}
+
+void
+BPSK31DemodulatorView::_onFilterWidthChanged(QString value) {
+  _demod->setFilterWidth(value.toDouble());
 }

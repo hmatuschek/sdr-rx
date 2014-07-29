@@ -8,7 +8,7 @@ Receiver::Receiver(QObject *parent)
 {
   /// @todo Unify data sources...
   _src   = new DataSourceCtrl(this);
-  _demod = new Demodulator(this);
+  _demod = new DemodulatorCtrl(this);
   _audio = new AudioPostProc(this);
 
   // Connect data source to demodulator
