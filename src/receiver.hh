@@ -41,7 +41,7 @@ protected:
   sdr::Queue &_queue;
 
   DataSourceCtrl  *_src;
-  Demodulator *_demod;
+  DemodulatorCtrl *_demod;
   AudioPostProc *_audio;
 };
 
