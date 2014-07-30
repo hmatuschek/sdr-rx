@@ -302,17 +302,17 @@ DemodulatorCtrlView::DemodulatorCtrlView(DemodulatorCtrl *demodulator, QWidget *
   QObject::connect(_demodulator, SIGNAL(filterChanged()), this, SLOT(onFilterChanged()));
 
   QFormLayout *side = new QFormLayout();
-  side->addRow("Center freq.", _centerFreq);
+  side->addRow("Modulation", _demodList);
   side->addRow("Gain", _gain);
   side->addWidget(_agc);
   side->addRow("AGC time", _agc_tau);
-  side->addRow("Modulation", _demodList);
+  side->addRow("Center freq.", _centerFreq);
 
   _layout = new QVBoxLayout();
   _layout->addLayout(side, 0);
   // If there is a demodulator selected already:
   if (_demodulator->demod()) {
-    _layout->addWidget(_demodulator->demod()->createView());
+    _layout->addWidget(_demodulator->demod()->createView(), 1, Qt::AlignTop);
   }
   this->setLayout(_layout);
 }
@@ -330,7 +330,7 @@ DemodulatorCtrlView::onDemodSelected(int idx) {
   _demodulator->setDemod(DemodulatorCtrl::Demod(_demodList->itemData(idx).toUInt()));
   QWidget *view = _demodulator->demod()->createView();
   // And append the demodulator view
-  _layout->addWidget(view);
+  _layout->addWidget(view, 1, Qt::AlignTop);
 }
 
 void
@@ -772,12 +772,14 @@ BPSK31DemodulatorView::BPSK31DemodulatorView(BPSK31Demodulator *demod, QWidget *
 
   _text = new QPlainTextEdit();
   _text->setReadOnly(true);
+  _text->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 
   QVBoxLayout *layout = new QVBoxLayout();
+  layout->setMargin(0);
   QFormLayout *form_layout = new QFormLayout();
   form_layout->addRow("Filter width", _filterWidth);
   layout->addLayout(form_layout, 0);
-  layout->addWidget(_text,1);
+  layout->addWidget(_text, 1);
 
   setLayout(layout);
 
