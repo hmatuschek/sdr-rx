@@ -96,7 +96,7 @@ DataSourceCtrlView::DataSourceCtrlView(DataSourceCtrl *src_ctrl, QWidget *parent
   src_sel->addItem("Port Audio");
   src_sel->addItem("Port Audio I/Q");
   src_sel->addItem("WAV File");
-  src_sel->addItem("RTLxxxx");
+  src_sel->addItem("RTL2832");
 
   // Get current source from receiver
   switch (_src_ctrl->source()) {

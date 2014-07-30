@@ -398,7 +398,7 @@ AMDemodulator::AMDemodulator(DemodulatorCtrl *ctrl)
 {
   // First configure base-band for AM reception
   _ctrl->setFilterFrequency(0.0);
-  _ctrl->setFilterWidth(3000);
+  _ctrl->setFilterWidth(6000);
 }
 
 AMDemodulator::~AMDemodulator() {

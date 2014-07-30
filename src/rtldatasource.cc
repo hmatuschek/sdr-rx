@@ -24,9 +24,11 @@ RTLDataSource::RTLDataSource(double frequency, double sample_rate, QObject *pare
   _to_int16 = new AutoCast< std::complex<int16_t> >();
   if (0 != _device) {
     _device->connect(_to_int16, true);
-    sdr::Queue::get().addStart(_device, &RTLSource::start);
-    sdr::Queue::get().addStop(_device, &RTLSource::stop);
   }
+
+  // Connect to Queue start and stop signals:
+  sdr::Queue::get().addStart(this, &RTLDataSource::onQueueStart);
+  sdr::Queue::get().addStop(this, &RTLDataSource::onQueueStop);
 }
 
 RTLDataSource::~RTLDataSource() {
@@ -64,6 +66,19 @@ RTLDataSource::setFrequency(double freq) {
   _device->setFrequency(freq);
 }
 
+double
+RTLDataSource::sampleRate() const {
+  return _device->sampleRate();
+}
+
+void
+RTLDataSource::setSampleRate(double rate) {
+  bool is_running = sdr::Queue::get().isRunning();
+  if (is_running) { sdr::Queue::get().stop(); }
+  _device->setSampleRate(rate);
+  if (is_running) { sdr::Queue::get().start(); }
+}
+
 bool
 RTLDataSource::agcEnabled() const {
   return _device->agcEnabled();
@@ -96,14 +111,22 @@ RTLDataSource::deviceName(size_t idx) {
 
 void
 RTLDataSource::setDevice(size_t idx) {
+  // Check for correct idx
   if (idx >= numDevices()) { return; }
+  // Stop queue if running
+  bool is_running = sdr::Queue::get().isRunning();
+  if (is_running) { sdr::Queue::get().stop(); }
+  // Delete device (if it exists)
   if (_device) {
     _device->disconnect(_to_int16);
     delete _device; _device=0;
   }
+  // Try to start device
   try {
-    _device = new RTLSource(100e6);
+    _device = new RTLSource(100e6, 1e6, idx);
     _device->connect(_to_int16, true);
+    // restart queue if it was running
+    if (is_running) { sdr::Queue::get().start(); }
   } catch (sdr::SDRError &err) {
     sdr::LogMessage msg(sdr::LOG_WARNING);
     msg << "Can not open RTL2832 device: " << err.what();
@@ -112,13 +135,25 @@ RTLDataSource::setDevice(size_t idx) {
 }
 
 
+void
+RTLDataSource::onQueueStart() {
+  if (_device) { _device->start(); }
+}
+
+void
+RTLDataSource::onQueueStop() {
+  if (_device) { _device->stop(); }
+}
+
+
+
 /* ******************************************************************************************** *
  * Implementation of RTLDataSource
  * ******************************************************************************************** */
 RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   : QWidget(parent), _source(source)
 {
-  _errorMessage = new QLabel("Can not open RTL device.");
+  _errorMessage = new QLabel("Cannot open RTL2832 device.");
   if (_source->isActive()) {
     _errorMessage->setVisible(false);
   }
@@ -155,6 +190,13 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
     if (_source->agcEnabled()) { _gain->setEnabled(false); }
   }
 
+  if (! _source->isActive()) {
+    _freq->setEnabled(false);
+    _sampleRates->setEnabled(false);
+    _gain->setEnabled(false);
+    _agc->setEnabled(false);
+  }
+
   QFormLayout *layout = new QFormLayout();
   QVBoxLayout *deviceLayout = new QVBoxLayout();
   deviceLayout->addWidget(_devices);
@@ -179,16 +221,35 @@ RTLCtrlView::~RTLCtrlView() {
 
 void
 RTLCtrlView::onDeviceSelected(int idx) {
+  _source->setDevice(idx);
+  if (_source->isActive()) {
+    // Enable all controlls:
+    _freq->setEnabled(true);
+    _sampleRates->setEnabled(true);
+    _gain->setEnabled(true);
+    _agc->setEnabled(true);
+  } else {
+    // Disable all controlls:
+    _freq->setEnabled(false);
+    _sampleRates->setEnabled(false);
+    _gain->setEnabled(false);
+    _agc->setEnabled(false);
+  }
+
 }
 
 void
 RTLCtrlView::onFrequencyChanged(QString value) {
+  if (! _source->isActive()) { return; }
   _source->setFrequency(value.toDouble());
 }
 
 void
 RTLCtrlView::onSampleRateSelected(int idx) {
-  // pass...
+  double rate = _sampleRates->itemData(idx).toDouble();
+  if (_source->isActive()) {
+    _source->setSampleRate(rate);
+  }
 }
 
 void
@@ -200,6 +261,7 @@ RTLCtrlView::onGainChanged(QString value) {
 
 void
 RTLCtrlView::onAGCToggled(bool enabled) {
+  if (! _source->isActive()) { return; }
   if (enabled) {
     _gain->setEnabled(false);
     _source->enableAGC(true);

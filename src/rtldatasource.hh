@@ -28,6 +28,9 @@ public:
   double frequency() const;
   void setFrequency(double freq);
 
+  double sampleRate() const;
+  void setSampleRate(double rate);
+
   bool agcEnabled() const;
   void enableAGC(bool enable);
 
@@ -38,6 +41,9 @@ public:
 
   static size_t numDevices();
   static std::string deviceName(size_t idx);
+
+  void onQueueStart();
+  void onQueueStop();
 
 protected:
   sdr::RTLSource *_device;
