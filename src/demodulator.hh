@@ -7,6 +7,7 @@
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
 #include <QComboBox>
+#include <QGroupBox>
 
 #include "gui/spectrum.hh"
 #include "gui/spectrumview.hh"
@@ -192,7 +193,7 @@ protected:
 };
 
 
-class AMDemodulatorView: public QWidget
+class AMDemodulatorView: public QGroupBox
 {
   Q_OBJECT
 
@@ -256,7 +257,7 @@ public:
 };
 
 
-class FMDemodulatorView: public QWidget
+class FMDemodulatorView: public QGroupBox
 {
   Q_OBJECT
 
@@ -332,7 +333,7 @@ public:
 };
 
 
-class SSBDemodulatorView: public QWidget
+class SSBDemodulatorView: public QGroupBox
 {
   Q_OBJECT
 
@@ -391,7 +392,7 @@ protected:
 };
 
 
-class BPSK31DemodulatorView: public QWidget
+class BPSK31DemodulatorView: public QGroupBox
 {
 Q_OBJECT
 

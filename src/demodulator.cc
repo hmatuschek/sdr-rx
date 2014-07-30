@@ -444,7 +444,7 @@ AMDemodulator::_onViewDeleted() {
 
 
 AMDemodulatorView::AMDemodulatorView(AMDemodulator *demod, QWidget *parent)
-  : QWidget(parent), _demod(demod)
+  : QGroupBox("AM Demodulator", parent), _demod(demod)
 {
   _filterWidth = new QLineEdit(QString::number(_demod->filterWidth()));
   QDoubleValidator *validator = new QDoubleValidator();
@@ -542,7 +542,7 @@ NFMDemodulator::~NFMDemodulator() {
 
 
 FMDemodulatorView::FMDemodulatorView(FMDemodulator *demod, QWidget *parent)
-  : QWidget(parent), _demod(demod)
+  : QGroupBox("FM Demodulator", parent), _demod(demod)
 {
   _filterWidth = new QLineEdit(QString::number(_demod->filterWidth()));
   QDoubleValidator *validator = new QDoubleValidator();
@@ -653,7 +653,7 @@ CWDemodulator::~CWDemodulator() {
 
 
 SSBDemodulatorView::SSBDemodulatorView(SSBDemodulator *demod, QWidget *parent)
-  : QWidget(parent), _demod(demod)
+  : QGroupBox("SSB Demodulator", parent), _demod(demod)
 {
   _filterWidth = new QLineEdit(QString::number(_demod->filterWidth()));
   QDoubleValidator *validator = new QDoubleValidator();
@@ -763,7 +763,7 @@ BPSK31Demodulator::_onViewDeleted() {
 
 
 BPSK31DemodulatorView::BPSK31DemodulatorView(BPSK31Demodulator *demod, QWidget *parent)
-  : QWidget(parent), _demod(demod)
+  : QGroupBox("BPSK31 Demodulator", parent), _demod(demod)
 {
   _filterWidth = new QLineEdit(QString::number(_demod->filterWidth()));
   QDoubleValidator *validator = new QDoubleValidator();
@@ -775,7 +775,7 @@ BPSK31DemodulatorView::BPSK31DemodulatorView(BPSK31Demodulator *demod, QWidget *
   _text->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 
   QVBoxLayout *layout = new QVBoxLayout();
-  layout->setMargin(0);
+  layout->setContentsMargins(0, 5, 0, 0);
   QFormLayout *form_layout = new QFormLayout();
   form_layout->addRow("Filter width", _filterWidth);
   layout->addLayout(form_layout, 0);
