@@ -37,7 +37,7 @@ MainWindow::MainWindow(Receiver *receiver, QWidget *parent)
 
   QSplitter *splitter = new QSplitter();
   splitter->addWidget(_receiver->createDemodView());
-
+  splitter->setCollapsible(0, false);
 
   QVBoxLayout *side = new QVBoxLayout();
   side->addWidget(_play, 0);
@@ -46,6 +46,7 @@ MainWindow::MainWindow(Receiver *receiver, QWidget *parent)
   QWidget *sidepanel = new QWidget();
   sidepanel->setLayout(side);
   splitter->addWidget(sidepanel);
+  splitter->setCollapsible(1, true);
 
   setCentralWidget(splitter);
 

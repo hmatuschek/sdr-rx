@@ -8,6 +8,7 @@
 #include <QWidget>
 #include <QLabel>
 #include <QCheckBox>
+#include <QComboBox>
 
 
 class PortAudioSource: public DataSource, public sdr::Proxy
@@ -26,9 +27,13 @@ public:
   virtual sdr::Source *source();
   virtual void triggerNext();
 
+  const std::vector<double> &sampleRates() const;
+  void setSampleRate(double rate);
+
 protected:
   sdr::PortSource<int16_t> *_src;
   sdr::ToComplex<int16_t, int16_t>  *_to_complex;
+  std::vector<double> _sampleRates;
 };
 
 
@@ -48,8 +53,12 @@ public:
   virtual sdr::Source *source();
   virtual void triggerNext();
 
+  const std::vector<double> &sampleRates() const;
+  void setSampleRate(double rate);
+
 protected:
   sdr::PortSource< std::complex<int16_t> > *_src;
+  std::vector<double> _sampleRates;
 };
 
 
@@ -63,13 +72,13 @@ public:
 
 protected slots:
   void _onSourceDeleted();
+  void _onSampleRateSelected(int idx);
 
 protected:
   // A weak reference to the source object
   PortAudioSource *_src;
-
   // The sample-rate
-  QLabel *_sample_rate;
+  QComboBox *_sample_rate;
   QLabel *_format;
 };
 
@@ -84,12 +93,13 @@ public:
 
 protected slots:
   void _onSourceDeleted();
+  void _onSampleRateSelected(int idx);
 
 protected:
   // A weak reference to the source object
   PortAudioIQSource *_src;
   // The sample-rate
-  QLabel *_sample_rate;
+  QComboBox *_sample_rate;
   QLabel *_format;
 };
 

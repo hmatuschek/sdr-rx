@@ -153,6 +153,8 @@ DemodulatorCtrl::createSpectrumView() {
 DemodulatorSpectrumView::DemodulatorSpectrumView(DemodulatorCtrl *demodulator)
   : gui::SpectrumView(demodulator), _demodulator(demodulator)
 {
+  setMinimumWidth(640);
+  setMinimumHeight(200);
   QObject::connect(demodulator, SIGNAL(filterChanged()), this, SLOT(update()));
 }
 
@@ -211,6 +213,7 @@ DemodulatorSpectrumView::paintEvent(QPaintEvent *evt) {
 DemodulatorWaterFallView::DemodulatorWaterFallView(DemodulatorCtrl *demodulator)
   : gui::WaterFallView(demodulator, 200), _demodulator(demodulator)
 {
+  setMinimumWidth(640);
   QObject::connect(demodulator, SIGNAL(filterChanged()), this, SLOT(update()));
 }
 
