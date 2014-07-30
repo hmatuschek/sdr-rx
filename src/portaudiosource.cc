@@ -68,9 +68,9 @@ PortAudioSource::sampleRates() const {
 void
 PortAudioSource::setSampleRate(double rate) {
   bool is_running = sdr::Queue::get().isRunning();
-  if (is_running) { sdr::Queue::get().stop(); }
+  if (is_running) { sdr::Queue::get().stop(); sdr::Queue::get().wait(); }
   _src->setSampleRate(rate);
-  if (is_running) { sdr::Queue::get().stop(); }
+  if (is_running) { sdr::Queue::get().start(); }
 }
 
 
@@ -135,7 +135,7 @@ PortAudioIQSource::sampleRates() const {
 void
 PortAudioIQSource::setSampleRate(double rate) {
   bool is_running = sdr::Queue::get().isRunning();
-  if (is_running) { sdr::Queue::get().stop(); }
+  if (is_running) { sdr::Queue::get().stop(); sdr::Queue::get().wait(); }
   _src->setSampleRate(rate);
   if (is_running) { sdr::Queue::get().start(); }
 }
