@@ -794,6 +794,7 @@ void
 BPSK31DemodulatorView::_onTextReceived() {
   QString text = _demod->text(); _demod->clearText();
   _text->insertPlainText(text);
+  _text->ensureCursorVisible();
 }
 
 void
