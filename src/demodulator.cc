@@ -258,6 +258,8 @@ DemodulatorWaterFallView::paintEvent(QPaintEvent *evt) {
   } else {
     freqText = freqText.arg(QString::number(tunerF/1e6, 'f', 4), "MHz");
   }
+  QFont font = painter.font(); font.setBold(true);
+  painter.setFont(font);
   // Draw label
   QRect rect = painter.fontMetrics().boundingRect(freqText);
   painter.drawText(QPoint(int(x-rect.width()/2), 10+rect.height()/2), freqText);

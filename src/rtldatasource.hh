@@ -40,6 +40,7 @@ public:
 
   double gain() const;
   void setGain(double gain);
+  const std::vector<double> &gainFactors() const;
 
   void setDevice(size_t idx);
 
@@ -62,9 +63,9 @@ public:
 
 protected slots:
   void onDeviceSelected(int idx);
-  void onFrequencyChanged(QString value);
+  void onFrequencyChanged();
   void onSampleRateSelected(int idx);
-  void onGainChanged(QString value);
+  void onGainChanged(int idx);
   void onAGCToggled(bool enabled);
 
 protected:
@@ -74,7 +75,7 @@ protected:
   QComboBox *_devices;
   QLineEdit *_freq;
   QComboBox *_sampleRates;
-  QLineEdit *_gain;
+  QComboBox *_gain;
   QCheckBox *_agc;
 };
 

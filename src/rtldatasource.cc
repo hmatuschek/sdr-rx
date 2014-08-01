@@ -90,6 +90,11 @@ RTLDataSource::setGain(double gain) {
   return _device->setGain(gain);
 }
 
+const std::vector<double> &
+RTLDataSource::gainFactors() const {
+  return _device->gainFactors();
+}
+
 size_t
 RTLDataSource::numDevices() {
   return sdr::RTLSource::numDevices();
@@ -138,7 +143,10 @@ RTLDataSource::queueStopped() {
 
 double
 RTLDataSource::tunerFrequency() const {
-  return frequency();
+  if (isActive()) {
+    return frequency();
+  }
+  return 0.0;
 }
 
 
@@ -173,12 +181,13 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   _sampleRates->addItem("1 MS/s", 1e6);
   _sampleRates->addItem("800 kS/s", 800e3);
 
-  _gain = new QLineEdit("0");
-  QDoubleValidator *gain_val = new QDoubleValidator();
-  gain_val->setBottom(-10); _gain->setValidator(gain_val);
+  _gain = new QComboBox();
   if (_source->isActive()) {
-    _gain->setText(QString::number(_source->gain()));
+    for (size_t i=0; i<_source->gainFactors().size(); i++) {
+      _gain->addItem(QString("%1 dB").arg(_source->gainFactors()[i]/10), _source->gainFactors()[i]);
+    }
   }
+
   _agc = new QCheckBox();
   if (_source->isActive()) {
     _agc->setChecked(_source->agcEnabled());
@@ -204,9 +213,9 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   setLayout(layout);
 
   QObject::connect(_devices, SIGNAL(currentIndexChanged(int)), this, SLOT(onDeviceSelected(int)));
-  QObject::connect(_freq, SIGNAL(textEdited(QString)), this, SLOT(onFrequencyChanged(QString)));
+  QObject::connect(_freq, SIGNAL(returnPressed()), this, SLOT(onFrequencyChanged()));
   QObject::connect(_sampleRates, SIGNAL(currentIndexChanged(int)), this, SLOT(onSampleRateSelected(int)));
-  QObject::connect(_gain, SIGNAL(textEdited(QString)), this, SLOT(onGainChanged(QString)));
+  QObject::connect(_gain, SIGNAL(currentIndexChanged(int)), this, SLOT(onGainChanged(int)));
   QObject::connect(_agc, SIGNAL(toggled(bool)), this, SLOT(onAGCToggled(bool)));
 }
 
@@ -234,9 +243,10 @@ RTLCtrlView::onDeviceSelected(int idx) {
 }
 
 void
-RTLCtrlView::onFrequencyChanged(QString value) {
+RTLCtrlView::onFrequencyChanged() {
+  double freq = _freq->text().toDouble();
   if (! _source->isActive()) { return; }
-  _source->setFrequency(value.toDouble());
+  _source->setFrequency(freq);
 }
 
 void
@@ -248,9 +258,10 @@ RTLCtrlView::onSampleRateSelected(int idx) {
 }
 
 void
-RTLCtrlView::onGainChanged(QString value) {
+RTLCtrlView::onGainChanged(int idx) {
   if (_source->isActive() && !_source->agcEnabled()) {
-    _source->setGain(value.toDouble());
+    double gain = _gain->itemData(idx).toDouble();
+    _source->setGain(gain);
   }
 }
 
