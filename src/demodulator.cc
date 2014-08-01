@@ -618,6 +618,17 @@ SSBDemodulator::setFilterWidth(double width) {
   _ctrl->setFilterWidth(width);
 }
 
+double
+SSBDemodulator::filterFrequency() const {
+  return _ctrl->filterFrequency();
+}
+
+void
+SSBDemodulator::setFilterFrequency(double f) {
+  _ctrl->setFilterFrequency(f);
+}
+
+
 sdr::SinkBase *
 SSBDemodulator::sink() {
   return &_demod;
@@ -701,7 +712,11 @@ SSBDemodulatorView::~SSBDemodulatorView() {
 
 void
 SSBDemodulatorView::_onFilterWidthChanged(QString value) {
-  _demod->setFilterWidth(value.toDouble());
+  double new_width = value.toDouble();
+  // Get change in center frequency to maintain lower cut-off frequency of the filter
+  double dF = (new_width - _demod->filterWidth())/2;
+  _demod->setFilterWidth(new_width);
+  _demod->setFilterFrequency(_demod->filterFrequency()+dF);
 }
 
 

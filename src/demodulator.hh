@@ -291,6 +291,9 @@ public:
   double filterWidth() const;
   void setFilterWidth(double width);
 
+  double filterFrequency() const;
+  void setFilterFrequency(double f);
+
   virtual sdr::SinkBase *sink();
   virtual sdr::Source *audioSource();
 
