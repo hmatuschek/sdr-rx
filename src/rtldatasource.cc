@@ -25,10 +25,6 @@ RTLDataSource::RTLDataSource(double frequency, double sample_rate, QObject *pare
   if (0 != _device) {
     _device->connect(_to_int16, true);
   }
-
-  // Connect to Queue start and stop signals:
-  sdr::Queue::get().addStart(this, &RTLDataSource::onQueueStart);
-  sdr::Queue::get().addStop(this, &RTLDataSource::onQueueStop);
 }
 
 RTLDataSource::~RTLDataSource() {
@@ -44,11 +40,6 @@ RTLDataSource::createCtrlView() {
 Source *
 RTLDataSource::source() {
   return _to_int16;
-}
-
-void
-RTLDataSource::triggerNext() {
-  // RTL data source runs in parallel
 }
 
 bool
@@ -136,12 +127,12 @@ RTLDataSource::setDevice(size_t idx) {
 
 
 void
-RTLDataSource::onQueueStart() {
+RTLDataSource::queueStarted() {
   if (_device) { _device->start(); }
 }
 
 void
-RTLDataSource::onQueueStop() {
+RTLDataSource::queueStopped() {
   if (_device) { _device->stop(); }
 }
 
@@ -180,7 +171,7 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
 
   _gain = new QLineEdit("0");
   QDoubleValidator *gain_val = new QDoubleValidator();
-  gain_val->setBottom(0); _gain->setValidator(gain_val);
+  gain_val->setBottom(-10); _gain->setValidator(gain_val);
   if (_source->isActive()) {
     _gain->setText(QString::number(_source->gain()));
   }

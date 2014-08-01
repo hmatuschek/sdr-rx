@@ -21,7 +21,9 @@ public:
 
   virtual QWidget *createCtrlView();
   virtual sdr::Source *source();
-  virtual void triggerNext();
+
+  virtual void queueStarted();
+  virtual void queueStopped();
 
   bool isActive() const;
 
@@ -41,9 +43,6 @@ public:
 
   static size_t numDevices();
   static std::string deviceName(size_t idx);
-
-  void onQueueStart();
-  void onQueueStop();
 
 protected:
   sdr::RTLSource *_device;

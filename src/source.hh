@@ -22,7 +22,9 @@ public:
 
   virtual QWidget *createCtrlView();
   virtual sdr::Source *source() = 0;
-  virtual void triggerNext() = 0;
+  virtual void triggerNext();
+  virtual void queueStarted();
+  virtual void queueStopped();
 };
 
 
@@ -47,6 +49,8 @@ public:
 
 protected:
   void _onQueueIdle();
+  void _onQueueStart();
+  void _onQueueStop();
 
 protected:
   Receiver *_receiver;

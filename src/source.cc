@@ -28,6 +28,19 @@ DataSource::createCtrlView() {
   return new QWidget();
 }
 
+void
+DataSource::triggerNext() {
+  // pass...
+}
+
+void DataSource::queueStarted() {
+  // pass...
+}
+
+void DataSource::queueStopped() {
+  // pass...
+}
+
 
 /* ********************************************************************************************* *
  * Implementation of DataSourceCtrl
@@ -42,6 +55,8 @@ DataSourceCtrl::DataSourceCtrl(Receiver *receiver)
   setSource(SOURCE_PORT);
 
   sdr::Queue::get().addIdle(this, &DataSourceCtrl::_onQueueIdle);
+  sdr::Queue::get().addStart(this, &DataSourceCtrl::_onQueueStart);
+  sdr::Queue::get().addStop(this, &DataSourceCtrl::_onQueueStop);
 }
 
 
@@ -82,6 +97,16 @@ DataSourceCtrl::createCtrlView() {
 void
 DataSourceCtrl::_onQueueIdle() {
   _src_obj->triggerNext();
+}
+
+void
+DataSourceCtrl::_onQueueStart() {
+  _src_obj->queueStarted();
+}
+
+void
+DataSourceCtrl::_onQueueStop() {
+  _src_obj->queueStopped();
 }
 
 
