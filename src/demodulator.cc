@@ -12,18 +12,90 @@
 using namespace sdr;
 
 
+
+/* ******************************************************************************************** *
+ * Implementation of DemodulatorCtrl
+ * ******************************************************************************************** */
+DemodulatorCtrlConfig::DemodulatorCtrlConfig()
+  : _config(Configuration::get())
+{
+  // pass...
+}
+
+DemodulatorCtrlConfig::~DemodulatorCtrlConfig() {
+  // pass...
+}
+
+unsigned int
+DemodulatorCtrlConfig::filterOrder() const {
+  return _config.value("BaseBand/filterOrder", 15).toUInt();
+}
+
+void
+DemodulatorCtrlConfig::storeFilterOrder(unsigned int order) {
+  _config.setValue("BaseBand/fitlerOrder", order);
+}
+
+double
+DemodulatorCtrlConfig::centerFrequency() const {
+  return _config.value("BaseBand/centerFrequency", 0.0).toDouble();
+}
+
+void
+DemodulatorCtrlConfig::storeCenterFrequency(double f) {
+  _config.setValue("BaseBand/centerFrequency", f);
+}
+
+bool
+DemodulatorCtrlConfig::agcEnabled() const {
+  return _config.value("BaseBand/agcEnabled", false).toBool();
+}
+
+void
+DemodulatorCtrlConfig::storeAgcEnabled(bool enabled) {
+  _config.setValue("BaseBand/agcEnabled", enabled);
+}
+
+double
+DemodulatorCtrlConfig::agcTau() const {
+  return _config.value("BaseBand/agcTau", 0.1).toDouble();
+}
+
+void
+DemodulatorCtrlConfig::storeAgcTau(double tau) {
+  _config.setValue("BaseBand/agcTau", tau);
+}
+
+double
+DemodulatorCtrlConfig::gain() const {
+  return _config.value("BaseBand/gain", 1.0).toDouble();
+}
+
+void
+DemodulatorCtrlConfig::storeGain(double gain) {
+  _config.setValue("BaseBand/gain", gain);
+}
+
+
+
+
+/* ******************************************************************************************** *
+ * Implementation of DemodulatorCtrl
+ * ******************************************************************************************** */
 DemodulatorCtrl::DemodulatorCtrl(Receiver *receiver) :
-  gui::Spectrum(2, 1024, 5, receiver), _receiver(receiver), _demodObj(0)
+  gui::Spectrum(2, 1024, 5, receiver), _receiver(receiver), _demodObj(0), _config()
 {
   // Assemble processing chain
   _agc = new AGC< std::complex<int16_t> >();
-  _filter_node = new IQBaseBand<int16_t>(0, 2000, 15, 1, 16000.0);
+  _filter_node = new IQBaseBand<int16_t>(_config.centerFrequency(), 2000,
+                                         _config.filterOrder(), 1, 16000.0);
   _audio_source = new sdr::Proxy();
 
   _agc->connect(_filter_node, true);
   _agc->connect(this);
-  _agc->enable(false);
-  _agc->setGain(1);
+  _agc->enable(_config.agcEnabled());
+  _agc->setTau(_config.agcTau());
+  _agc->setGain(_config.gain());
 
   setDemod(DEMOD_USB);
 }
@@ -56,6 +128,7 @@ DemodulatorCtrl::gain() const {
 void
 DemodulatorCtrl::setGain(double gain) {
   _agc->setGain(pow(10, gain/20));
+  _config.storeGain(_agc->gain());
 }
 
 
@@ -67,18 +140,21 @@ DemodulatorCtrl::agcTime() const {
 void
 DemodulatorCtrl::setAGCTime(double tau) {
   _agc->setTau(tau);
+  _config.storeAgcTau(tau);
 }
 
 
 void
 DemodulatorCtrl::enableAGC(bool enable) {
   _agc->enable(enable);
+  _config.storeAgcEnabled(enable);
 }
 
 void
 DemodulatorCtrl::setCenterFreq(double f) {
   double dF = this->filterFrequency();
   _filter_node->setCenterFrequency(f);
+  _config.storeCenterFrequency(f);
   this->setFilterFrequency(dF);
 }
 
@@ -718,6 +794,7 @@ SSBDemodulatorView::_onFilterWidthChanged(QString value) {
   _demod->setFilterWidth(new_width);
   _demod->setFilterFrequency(_demod->filterFrequency()+dF);
 }
+
 
 
 /* ******************************************************************************************** *

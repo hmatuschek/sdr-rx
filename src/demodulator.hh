@@ -16,12 +16,42 @@
 #include "psk31.hh"
 #include "demod.hh"
 #include "firfilter.hh"
+#include "configuration.hh"
 
 
 // Forward declaration
 class Receiver;
 class DemodInterface;
 
+
+/** Configuration class for the generic part of the demodulator. */
+class DemodulatorCtrlConfig
+{
+public:
+  DemodulatorCtrlConfig();
+  virtual ~DemodulatorCtrlConfig();
+
+  unsigned int filterOrder() const;
+  void storeFilterOrder(unsigned int order);
+
+  double centerFrequency() const;
+  void storeCenterFrequency(double f);
+
+  bool agcEnabled() const;
+  void storeAgcEnabled(bool enabled);
+
+  double agcTau() const;
+  void storeAgcTau(double tau);
+
+  double gain() const;
+  void storeGain(double gain);
+
+protected:
+  Configuration &_config;
+};
+
+
+/** Generic demodulator control. */
 class DemodulatorCtrl : public sdr::gui::Spectrum
 {
   Q_OBJECT
@@ -86,8 +116,10 @@ protected:
   sdr::AGC< std::complex<int16_t> > *_agc;
   // The filter node
   sdr::IQBaseBand<int16_t> *_filter_node;
-
+  /** Audio source. */
   sdr::Proxy *_audio_source;
+  /** Configuration. */
+  DemodulatorCtrlConfig _config;
 };
 
 

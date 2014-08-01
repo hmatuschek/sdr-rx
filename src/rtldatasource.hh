@@ -5,10 +5,30 @@
 #include "rtlsource.hh"
 #include "utils.hh"
 #include "autocast.hh"
+#include "configuration.hh"
 
 #include <QLabel>
 #include <QComboBox>
 #include <QCheckBox>
+
+
+/** Persistent configuration of the RTL device. */
+class RTLDataSourceConfig
+{
+public:
+  RTLDataSourceConfig();
+  virtual ~RTLDataSourceConfig();
+
+  double frequency() const;
+  void storeFrequency(double f);
+
+  double sampleRate() const;
+  void storeSampleRate(double rate);
+
+protected:
+  /** The global config instance. */
+  Configuration &_config;
+};
 
 
 class RTLDataSource : public DataSource
@@ -16,7 +36,7 @@ class RTLDataSource : public DataSource
   Q_OBJECT
 
 public:
-  RTLDataSource(double frequency, double sample_rate, QObject *parent=0);
+  RTLDataSource(QObject *parent=0);
   virtual ~RTLDataSource();
 
   virtual QWidget *createCtrlView();
@@ -50,6 +70,8 @@ public:
 protected:
   sdr::RTLSource *_device;
   sdr::AutoCast<std::complex<int16_t> > *_to_int16;
+
+  RTLDataSourceConfig _config;
 };
 
 

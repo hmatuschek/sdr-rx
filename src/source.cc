@@ -86,7 +86,7 @@ DataSourceCtrl::setSource(Src source) {
   case SOURCE_PORT: _src_obj = new PortAudioSource(this); break;
   case SOURCE_PORT_IQ: _src_obj = new PortAudioIQSource(this); break;
   case SOURCE_FILE: _src_obj = new FileSource(this); break;
-  case SOURCE_RTL: _src_obj = new RTLDataSource(100e6, 225001, this); break;
+  case SOURCE_RTL: _src_obj = new RTLDataSource(this); break;
   }
   _src_obj->source()->connect(this, true);
 

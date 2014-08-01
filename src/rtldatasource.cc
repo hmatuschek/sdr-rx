@@ -8,13 +8,48 @@ using namespace sdr;
 
 
 /* ******************************************************************************************** *
+ * Implementation of RTLDataSourceConfig
+ * ******************************************************************************************** */
+RTLDataSourceConfig::RTLDataSourceConfig()
+  : _config(Configuration::get())
+{
+  // pass...
+}
+
+RTLDataSourceConfig::~RTLDataSourceConfig() {
+  // pass...
+}
+
+double
+RTLDataSourceConfig::frequency() const {
+  return _config.value("RTLDataSource/frequency", 100.0e6).toDouble();
+}
+
+void
+RTLDataSourceConfig::storeFrequency(double f) {
+  _config.setValue("RTLDataSource/frequency", f);
+}
+
+double
+RTLDataSourceConfig::sampleRate() const {
+  return _config.value("RTLDataSource/sampleRate", 1.0e6).toDouble();
+}
+
+void
+RTLDataSourceConfig::storeSampleRate(double f) {
+  _config.setValue("RTLDataSource/sampleRate", f);
+}
+
+
+
+/* ******************************************************************************************** *
  * Implementation of RTLDataSource
  * ******************************************************************************************** */
-RTLDataSource::RTLDataSource(double frequency, double sample_rate, QObject *parent)
-  : DataSource(parent), _device(0)
+RTLDataSource::RTLDataSource(QObject *parent)
+  : DataSource(parent), _device(0), _config()
 {
   try {
-    _device = new RTLSource(frequency, sample_rate);
+    _device = new RTLSource(_config.frequency(), _config.sampleRate());
   } catch (sdr::SDRError &err) {
     sdr::LogMessage msg(sdr::LOG_WARNING);
     msg << "Can not open RTL2832 device: " << err.what();
@@ -54,7 +89,10 @@ RTLDataSource::frequency() const {
 
 void
 RTLDataSource::setFrequency(double freq) {
+  // Set frequency of the device
   _device->setFrequency(freq);
+  // and store it in the config
+  _config.storeFrequency(freq);
 }
 
 double
