@@ -25,6 +25,8 @@ public:
   virtual void queueStarted();
   virtual void queueStopped();
 
+  virtual double tunerFrequency() const;
+
   bool isActive() const;
 
   double frequency() const;

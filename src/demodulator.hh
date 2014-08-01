@@ -41,6 +41,9 @@ public:
   explicit DemodulatorCtrl(Receiver *receiver = 0);
   virtual ~DemodulatorCtrl();
 
+  /** Simply returns the receiver instance passed to the constructor. */
+  Receiver *receiver() const;
+
   bool isAGCEnabled() const;
   double gain() const;
   double agcTime() const;

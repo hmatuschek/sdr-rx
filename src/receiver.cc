@@ -55,6 +55,12 @@ Receiver::createAudioCtrlView() {
   return new AudioPostProcView(_audio);
 }
 
+double
+Receiver::tunerFrequency() const {
+  return _src->tunerFrequency();
+}
+
+
 void
 Receiver::start() {
   _queue.start();

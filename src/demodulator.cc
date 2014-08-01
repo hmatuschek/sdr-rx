@@ -38,6 +38,10 @@ DemodulatorCtrl::~DemodulatorCtrl() {
   }
 }
 
+Receiver *
+DemodulatorCtrl::receiver() const {
+  return _receiver;
+}
 
 bool
 DemodulatorCtrl::isAGCEnabled() const {
@@ -239,6 +243,24 @@ DemodulatorWaterFallView::paintEvent(QPaintEvent *evt) {
   double dfdx = _demodulator->sampleRate()/(this->width());
   double x = (_demodulator->centerFreq()+_demodulator->sampleRate()/2)/dfdx;
   painter.drawLine(x, 0, x, this->height());
+
+  // Get tuner frequency (if possible):
+  double tunerF = _demodulator->centerFreq();
+  if (_demodulator->receiver()) {
+    tunerF += _demodulator->receiver()->tunerFrequency();
+  }
+  // Layout frequency lable
+  QString freqText = "%1 %2";
+  if (std::abs(tunerF) < 10e3) {
+    freqText = freqText.arg(QString::number(tunerF, 'f', 1), "Hz");
+  } else if (std::abs(tunerF) < 10e6) {
+    freqText = freqText.arg(QString::number(tunerF/1e3, 'f', 3), "kHz");
+  } else {
+    freqText = freqText.arg(QString::number(tunerF/1e6, 'f', 4), "MHz");
+  }
+  // Draw label
+  QRect rect = painter.fontMetrics().boundingRect(freqText);
+  painter.drawText(QPoint(int(x-rect.width()/2), 10+rect.height()/2), freqText);
 
   // Draw filter area:
   QRect filter; QColor color(0,0,255, 64);

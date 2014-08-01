@@ -22,9 +22,14 @@ public:
 
   virtual QWidget *createCtrlView();
   virtual sdr::Source *source() = 0;
+
   virtual void triggerNext();
   virtual void queueStarted();
   virtual void queueStopped();
+
+  /** Can be overwritten by any sub-class to provide the tuner frequency of the source. By default,
+   * this method returns 0, means there is no tuner. */
+  virtual double tunerFrequency() const;
 };
 
 
@@ -46,6 +51,9 @@ public:
   void setSource(Src source);
 
   QWidget *createCtrlView();
+
+  /** Returns the tuner frequency of the current source or 0 if the source does not have a tuner. */
+  double tunerFrequency() const;
 
 protected:
   void _onQueueIdle();

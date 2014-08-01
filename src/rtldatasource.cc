@@ -136,6 +136,10 @@ RTLDataSource::queueStopped() {
   if (_device) { _device->stop(); }
 }
 
+double
+RTLDataSource::tunerFrequency() const {
+  return frequency();
+}
 
 
 /* ******************************************************************************************** *

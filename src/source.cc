@@ -41,6 +41,11 @@ void DataSource::queueStopped() {
   // pass...
 }
 
+double
+DataSource::tunerFrequency() const {
+  return 0;
+}
+
 
 /* ********************************************************************************************* *
  * Implementation of DataSourceCtrl
@@ -92,6 +97,11 @@ DataSourceCtrl::setSource(Src source) {
 QWidget *
 DataSourceCtrl::createCtrlView() {
   return _src_obj->createCtrlView();
+}
+
+double
+DataSourceCtrl::tunerFrequency() const {
+  return _src_obj->tunerFrequency();
 }
 
 void

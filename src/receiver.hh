@@ -24,6 +24,9 @@ public:
   QWidget *createDemodView();
   QWidget *createAudioCtrlView();
 
+  /** Returns the tuner frequency of the source or 0 if the source does not have a tuner. */
+  double tunerFrequency() const;
+
 signals:
   void started();
   void stopped();
