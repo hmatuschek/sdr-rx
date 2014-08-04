@@ -3,6 +3,8 @@
 
 #include <QComboBox>
 #include <QFormLayout>
+#include <QToolButton>
+#include <QPushButton>
 
 using namespace sdr;
 
@@ -213,6 +215,18 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
     _freq->setText(QString::number(_source->frequency()));
   }
 
+  // save frequencies
+  QAction *saveFreqAction = new QAction(QIcon::fromTheme("document-save"), "Save",this);
+  QObject::connect(saveFreqAction, SIGNAL(triggered()), this, SLOT(onSaveFrequency()));
+  QToolButton *saveFreqButton = new QToolButton();
+  saveFreqButton->setDefaultAction(saveFreqAction);
+  // Load frequencies
+  _freqMenu = new QMenu();
+  QAction *loadFreqAction = new QAction(QIcon::fromTheme("document-open"), "Load", this);
+  QToolButton *loadFreqButton = new QToolButton();
+  loadFreqButton->setDefaultAction(loadFreqAction);
+  loadFreqButton->setMenu(_freqMenu);
+
   // Sample rate:
   _sampleRates = new QComboBox();
   _sampleRates->addItem("2 MS/s", 2e6);
@@ -240,14 +254,21 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   }
 
   QFormLayout *layout = new QFormLayout();
+
   QVBoxLayout *deviceLayout = new QVBoxLayout();
   deviceLayout->addWidget(_devices);
   deviceLayout->addWidget(_errorMessage);
   layout->addRow("Device", deviceLayout);
-  layout->addRow("Frequency", _freq);
+
+  QHBoxLayout *freqLayout = new QHBoxLayout();
+  freqLayout->addWidget(_freq, 1); freqLayout->addWidget(saveFreqButton, 0);
+  freqLayout->addWidget(loadFreqButton, 0);
+  layout->addRow("Frequency", freqLayout);
+
   layout->addRow("Sample rate", _sampleRates);
   layout->addRow("Gain", _gain);
   layout->addRow("AGC", _agc);
+
   setLayout(layout);
 
   QObject::connect(_devices, SIGNAL(currentIndexChanged(int)), this, SLOT(onDeviceSelected(int)));
@@ -285,6 +306,11 @@ RTLCtrlView::onFrequencyChanged() {
   double freq = _freq->text().toDouble();
   if (! _source->isActive()) { return; }
   _source->setFrequency(freq);
+}
+
+void
+RTLCtrlView::onSaveFrequency() {
+  std::cerr << "Save frequency " << _freq->text().toDouble() << std::endl;
 }
 
 void

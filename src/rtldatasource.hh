@@ -10,7 +10,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QCheckBox>
-
+#include <QMenu>
 
 /** Persistent configuration of the RTL device. */
 class RTLDataSourceConfig
@@ -86,6 +86,7 @@ public:
 protected slots:
   void onDeviceSelected(int idx);
   void onFrequencyChanged();
+  void onSaveFrequency();
   void onSampleRateSelected(int idx);
   void onGainChanged(int idx);
   void onAGCToggled(bool enabled);
@@ -96,6 +97,8 @@ protected:
 
   QComboBox *_devices;
   QLineEdit *_freq;
+  QMenu     *_freqMenu;
+  QAction   *_saveFreqAction;
   QComboBox *_sampleRates;
   QComboBox *_gain;
   QCheckBox *_agc;
