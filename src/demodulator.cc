@@ -636,7 +636,7 @@ NFMDemodulator::NFMDemodulator(DemodulatorCtrl *demod)
 {
   // Configure BaseBand for NFM RX:
   _ctrl->setFilterFrequency(0.0);
-  _ctrl->setFilterWidth(5000.0);
+  _ctrl->setFilterWidth(12500.0);
 }
 
 NFMDemodulator::~NFMDemodulator() {
@@ -733,8 +733,8 @@ USBDemodulator::USBDemodulator(DemodulatorCtrl *ctrl, QObject *parent)
   : SSBDemodulator(ctrl, parent)
 {
   // Configure BaseBand for SSB reception
-  _ctrl->setFilterWidth(2000);
-  _ctrl->setFilterFrequency(1100);
+  _ctrl->setFilterWidth(3000);
+  _ctrl->setFilterFrequency(1700);
 }
 
 USBDemodulator::~USBDemodulator() {
@@ -745,8 +745,8 @@ LSBDemodulator::LSBDemodulator(DemodulatorCtrl *ctrl, QObject *parent)
   : SSBDemodulator(ctrl, parent)
 {
   // Configure BaseBand for SSB reception
-  _ctrl->setFilterWidth(2000);
-  _ctrl->setFilterFrequency(-1100);
+  _ctrl->setFilterWidth(3000);
+  _ctrl->setFilterFrequency(-1700);
 }
 
 LSBDemodulator::~LSBDemodulator() {

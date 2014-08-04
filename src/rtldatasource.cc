@@ -232,6 +232,8 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   _sampleRates->addItem("2 MS/s", 2e6);
   _sampleRates->addItem("1 MS/s", 1e6);
   _sampleRates->addItem("800 kS/s", 800e3);
+  _sampleRates->setCurrentIndex(0);
+  this->onSampleRateSelected(0);
 
   _gain = new QComboBox();
   if (_source->isActive()) {
