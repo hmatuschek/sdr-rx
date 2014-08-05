@@ -70,16 +70,6 @@ AudioPostProc::setLowPassOrder(size_t order) {
   _low_pass->setOrder(order);
 }
 
-double
-AudioPostProc::gain() const {
-  return 0; //return 10*(log10(_to_int->scale())-log10(32000));
-}
-
-void
-AudioPostProc::setGain(double gain_dB) {
-  //_to_int->setScale(pow(10,gain_dB/10)*32000);
-}
-
 gui::Spectrum *
 AudioPostProc::spectrum() const {
   return _audio_spectrum;
@@ -109,13 +99,6 @@ AudioPostProcView::AudioPostProcView(AudioPostProc *proc, QWidget *parent)
     _lp_order->setEnabled(false);
   }
 
-  _gain = new QDoubleSpinBox();
-  _gain->setRange(-std::numeric_limits<double>::infinity(),
-                  std::numeric_limits<double>::infinity());
-  _gain->setSingleStep(0.5);
-  _gain->setSuffix(" dB");
-  _gain->setValue(_proc->gain());
-
   // Create spectrum view:
   _spectrum = new gui::SpectrumView(_proc->spectrum());
   _spectrum->setNumXTicks(5);
@@ -123,7 +106,6 @@ AudioPostProcView::AudioPostProcView(AudioPostProc *proc, QWidget *parent)
   QObject::connect(_lp_freq, SIGNAL(textEdited(QString)), this, SLOT(onSetLowPassFreq(QString)));
   QObject::connect(_lp_order, SIGNAL(valueChanged(int)), this, SLOT(onSetLowPassOrder(int)));
   QObject::connect(lp_enable, SIGNAL(toggled(bool)), this, SLOT(onLowPassToggled(bool)));
-  QObject::connect(_gain, SIGNAL(valueChanged(double)), this, SLOT(onSetGain(double)));
 
   // Layout
   QVBoxLayout *layout = new QVBoxLayout();
@@ -131,7 +113,6 @@ AudioPostProcView::AudioPostProcView(AudioPostProc *proc, QWidget *parent)
   table->addRow("Low Pass (Hz)", _lp_freq);
   table->addRow("order", _lp_order);
   table->addWidget(lp_enable);
-  table->addRow("Gain (dB)",_gain);
   layout->addLayout(table, 0);
 
   layout->addWidget(_spectrum, 1);
@@ -162,9 +143,4 @@ void
 AudioPostProcView::onSetLowPassOrder(int value) {
   if (value < 1) { _lp_order->setValue(1); }
   _proc->setLowPassOrder((size_t) value);
-}
-
-void
-AudioPostProcView::onSetGain(double value) {
-  _proc->setGain(value);
 }

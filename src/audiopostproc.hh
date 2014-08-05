@@ -32,9 +32,6 @@ public:
   size_t lowPassOrder() const;
   void setLowPassOrder(size_t order);
 
-  double gain() const;
-  void setGain(double gain_dB);
-
   sdr::gui::Spectrum *spectrum() const;
 
 protected:
@@ -56,14 +53,12 @@ public:
 protected slots:
   void onLowPassToggled(bool enable);
   void onSetLowPassFreq(QString value);
-  void onSetGain(double value);
   void onSetLowPassOrder(int value);
 
 protected:
   AudioPostProc *_proc;
   QLineEdit *_lp_freq;
   QSpinBox  *_lp_order;
-  QDoubleSpinBox *_gain;
   sdr::gui::SpectrumView *_spectrum;
 };
 

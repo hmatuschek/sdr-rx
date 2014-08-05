@@ -259,6 +259,9 @@ public:
   double filterWidth() const;
   void setFilterWidth(double width);
 
+  bool deemphEnabled() const;
+  void enableDeemph(bool enable);
+
   virtual sdr::SinkBase *sink();
   virtual sdr::Source *audioSource();
 
@@ -270,6 +273,7 @@ protected slots:
 protected:
   DemodulatorCtrl *_ctrl;
   sdr::FMDemod<int16_t> _demod;
+  sdr::FMDeemph<int16_t> _deemph;
   FMDemodulatorView *_view;
 };
 
@@ -302,6 +306,7 @@ public:
 
 protected slots:
   void _onFilterWidthChanged(QString value);
+  void _onDeemphToggled(bool enabled);
 
 protected:
   FMDemodulator *_demod;

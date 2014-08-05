@@ -62,6 +62,9 @@ public:
   void setGain(double gain);
   const std::vector<double> &gainFactors() const;
 
+  double IQBalance() const;
+  void setIQBalance(double balance);
+
   void setDevice(size_t idx);
 
   static size_t numDevices();
@@ -69,8 +72,8 @@ public:
 
 protected:
   sdr::RTLSource *_device;
-  sdr::AutoCast<std::complex<int16_t> > *_to_int16;
-
+  sdr::AutoCast< std::complex<int16_t> > *_to_int16;
+  sdr::IQBalance< std::complex<int16_t> > _balance;
   RTLDataSourceConfig _config;
 };
 
@@ -90,6 +93,7 @@ protected slots:
   void onSampleRateSelected(int idx);
   void onGainChanged(int idx);
   void onAGCToggled(bool enabled);
+  void onBalanceChanged();
 
 protected:
   QLabel *_errorMessage;
@@ -102,6 +106,7 @@ protected:
   QComboBox *_sampleRates;
   QComboBox *_gain;
   QCheckBox *_agc;
+  QLineEdit *_balance;
 };
 
 #endif // __SDR_RX_RTLDATASOURCE_HH__

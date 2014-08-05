@@ -576,9 +576,10 @@ AMDemodulatorView::_onFilterWidthChanged(QString value) {
  * Implementation of FMDemodulator and view
  * ******************************************************************************************** */
 FMDemodulator::FMDemodulator(DemodulatorCtrl *demod)
-  : QObject(), DemodInterface(), _ctrl(demod), _demod(), _view(0)
+  : QObject(), DemodInterface(), _ctrl(demod), _demod(), _deemph(), _view(0)
 {
-  // pass...
+  // connect stuff...
+  _demod.connect(&_deemph, true);
 }
 
 FMDemodulator::~FMDemodulator() {
@@ -595,6 +596,16 @@ FMDemodulator::setFilterWidth(double width) {
   _ctrl->setFilterWidth(width);
 }
 
+bool
+FMDemodulator::deemphEnabled() const {
+  return _deemph.isEnabled();
+}
+
+void
+FMDemodulator::enableDeemph(bool enable) {
+  _deemph.enable(enable);
+}
+
 sdr::SinkBase *
 FMDemodulator::sink() {
   return &_demod;
@@ -602,7 +613,7 @@ FMDemodulator::sink() {
 
 sdr::Source *
 FMDemodulator::audioSource() {
-  return &_demod;
+  return &_deemph;
 }
 
 QWidget *
@@ -652,12 +663,17 @@ FMDemodulatorView::FMDemodulatorView(FMDemodulator *demod, QWidget *parent)
   validator->setBottom(0);
   _filterWidth->setValidator(validator);
 
+  QCheckBox *deemph = new QCheckBox();
+  deemph->setChecked(_demod->deemphEnabled());
+
   QFormLayout *layout = new QFormLayout();
   layout->addRow("Filter width", _filterWidth);
+  layout->addRow("De-emph.", deemph);
   setLayout(layout);
 
   QObject::connect(_filterWidth, SIGNAL(textEdited(QString)),
                    this, SLOT(_onFilterWidthChanged(QString)));
+  QObject::connect(deemph, SIGNAL(toggled(bool)), this, SLOT(_onDeemphToggled(bool)));
 }
 
 FMDemodulatorView::~FMDemodulatorView() {
@@ -667,6 +683,11 @@ FMDemodulatorView::~FMDemodulatorView() {
 void
 FMDemodulatorView::_onFilterWidthChanged(QString value) {
   _demod->setFilterWidth(value.toDouble());
+}
+
+void
+FMDemodulatorView::_onDeemphToggled(bool enabled) {
+  _demod->enableDeemph(enabled);
 }
 
 

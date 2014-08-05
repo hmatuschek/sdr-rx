@@ -48,7 +48,7 @@ RTLDataSourceConfig::storeSampleRate(double f) {
  * Implementation of RTLDataSource
  * ******************************************************************************************** */
 RTLDataSource::RTLDataSource(QObject *parent)
-  : DataSource(parent), _device(0), _config()
+  : DataSource(parent), _device(0), _balance(), _config()
 {
   try {
     _device = new RTLSource(_config.frequency(), _config.sampleRate());
@@ -62,6 +62,7 @@ RTLDataSource::RTLDataSource(QObject *parent)
   if (0 != _device) {
     _device->connect(_to_int16, true);
   }
+  _to_int16->connect(&_balance, true);
 }
 
 RTLDataSource::~RTLDataSource() {
@@ -76,7 +77,7 @@ RTLDataSource::createCtrlView() {
 
 Source *
 RTLDataSource::source() {
-  return _to_int16;
+  return &_balance;
 }
 
 bool
@@ -133,6 +134,16 @@ RTLDataSource::setGain(double gain) {
 const std::vector<double> &
 RTLDataSource::gainFactors() const {
   return _device->gainFactors();
+}
+
+double
+RTLDataSource::IQBalance() const {
+  return _balance.balance();
+}
+
+void
+RTLDataSource::setIQBalance(double balance) {
+  _balance.setBalance(balance);
 }
 
 size_t
@@ -212,7 +223,8 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   freq_val->setBottom(0);
   _freq->setValidator(freq_val);
   if(_source->isActive()) {
-    _freq->setText(QString::number(_source->frequency()));
+    double f = _source->frequency();
+    _freq->setText(QString::number(f));
   }
 
   // save frequencies
@@ -220,7 +232,8 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   QObject::connect(saveFreqAction, SIGNAL(triggered()), this, SLOT(onSaveFrequency()));
   QToolButton *saveFreqButton = new QToolButton();
   saveFreqButton->setDefaultAction(saveFreqAction);
-  // Load frequencies
+
+  // load frequencies
   _freqMenu = new QMenu();
   QAction *loadFreqAction = new QAction(QIcon::fromTheme("document-open"), "Load", this);
   QToolButton *loadFreqButton = new QToolButton();
@@ -231,7 +244,8 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   _sampleRates = new QComboBox();
   _sampleRates->addItem("2 MS/s", 2e6);
   _sampleRates->addItem("1 MS/s", 1e6);
-  _sampleRates->addItem("800 kS/s", 800e3);
+  _sampleRates->addItem("900 kS/s", 900e3);
+  _sampleRates->addItem("300 kS/s", 300e3);
   _sampleRates->setCurrentIndex(0);
   this->onSampleRateSelected(0);
 
@@ -248,11 +262,20 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
     if (_source->agcEnabled()) { _gain->setEnabled(false); }
   }
 
+  _balance = new QLineEdit();
+  QDoubleValidator *balance_val = new QDoubleValidator();
+  balance_val->setRange(-1., 1.);
+  _balance->setValidator(balance_val);
+  if (_source->isActive()) {
+    _balance->setText(QString::number(_source->IQBalance()));
+  }
+
   if (! _source->isActive()) {
     _freq->setEnabled(false);
     _sampleRates->setEnabled(false);
     _gain->setEnabled(false);
     _agc->setEnabled(false);
+    _balance->setEnabled(false);
   }
 
   QFormLayout *layout = new QFormLayout();
@@ -270,7 +293,7 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   layout->addRow("Sample rate", _sampleRates);
   layout->addRow("Gain", _gain);
   layout->addRow("AGC", _agc);
-
+  layout->addRow("IQ Balance", _balance);
   setLayout(layout);
 
   QObject::connect(_devices, SIGNAL(currentIndexChanged(int)), this, SLOT(onDeviceSelected(int)));
@@ -278,6 +301,7 @@ RTLCtrlView::RTLCtrlView(RTLDataSource *source, QWidget *parent)
   QObject::connect(_sampleRates, SIGNAL(currentIndexChanged(int)), this, SLOT(onSampleRateSelected(int)));
   QObject::connect(_gain, SIGNAL(currentIndexChanged(int)), this, SLOT(onGainChanged(int)));
   QObject::connect(_agc, SIGNAL(toggled(bool)), this, SLOT(onAGCToggled(bool)));
+  QObject::connect(_balance, SIGNAL(returnPressed()), this, SLOT(onBalanceChanged()));
 }
 
 RTLCtrlView::~RTLCtrlView() {
@@ -340,5 +364,13 @@ RTLCtrlView::onAGCToggled(bool enabled) {
   } else {
     _gain->setEnabled(true);
     _source->enableAGC(false);
+  }
+}
+
+void
+RTLCtrlView::onBalanceChanged() {
+  double value = _balance->text().toDouble();
+  if ( _source->isActive()) {
+    _source->setIQBalance(value);
   }
 }
