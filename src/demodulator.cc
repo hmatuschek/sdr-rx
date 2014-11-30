@@ -291,7 +291,7 @@ DemodulatorSpectrumView::paintEvent(QPaintEvent *evt) {
  * Implementation of DemodulatorWaterFallView
  * ******************************************************************************************** */
 DemodulatorWaterFallView::DemodulatorWaterFallView(DemodulatorCtrl *demodulator)
-  : gui::WaterFallView(demodulator, 200), _demodulator(demodulator)
+  : gui::WaterFallView(demodulator, 200, BOTTOM_UP), _demodulator(demodulator)
 {
   setMinimumWidth(640);
   QObject::connect(demodulator, SIGNAL(filterChanged()), this, SLOT(update()));
@@ -308,10 +308,11 @@ DemodulatorWaterFallView::paintEvent(QPaintEvent *evt) {
 
   QPainter painter(this);
   painter.setRenderHint(QPainter::Antialiasing);
-  painter.save();
 
   // Clip region to update
   painter.setClipRect(evt->rect());
+
+  painter.save();
 
   // Draw a thin line at the center frequency
   QPen pen(QColor(0,0,255));
