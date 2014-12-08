@@ -1,0 +1,14 @@
+Source: sdr-rx
+Priority: extra
+Maintainer: Hannes Matuschek <hmatuschek@gmail.com>
+Build-Depends: cdbs (>= 0.4.51), dh-exec, debhelper (>= 8.0.0), cmake, qtbase5-dev (>= 5.0), portaudio19-dev, librtlsdr-dev, fftw3-dev, libsdr-dev
+Standards-Version: 3.9.2
+Section: hamradio
+Homepage: http://github.com/hmatuschek/sdr-rx
+
+Package: sdr-rx
+Section: hamradio
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: sdr-rx
+  A SDR receiver using libsdr.
