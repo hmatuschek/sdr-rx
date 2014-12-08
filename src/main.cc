@@ -1,4 +1,4 @@
-#include "gui/gui.hh"
+#include "libsdr/gui/gui.hh"
 
 #include <QApplication>
 
