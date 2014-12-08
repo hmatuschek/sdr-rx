@@ -1,4 +1,0 @@
-#! /usr/bin/dh-exec
-/usr/bin/sdr-rx
-/usr/share/applications/sdr-rx.desktop
-/usr/share/icons/sdr-rx.svg

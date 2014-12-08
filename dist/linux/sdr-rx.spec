@@ -14,7 +14,7 @@ Buildroot: /tmp/libsdrrpm
 BuildRequires: gcc-c++, cmake, portaudio-devel, fftw3-devel, rtl-sdr-devel, libsdr-devel
 Requires: portaudio, fftw3, rtl-sdr, libsdr
 %if 0%{?suse_version}
-BuildRequires: libqt5-qtbase-devel
+BuildRequires: libqt5-qtbase-devel, alsa-devel
 Requires: libqt5-qtbase 
 %endif
 %if 0%{?fedora}

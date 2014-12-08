@@ -29,6 +29,7 @@ set(LIBS ${FFTW_LIBRARIES} ${FFTWSingle_LIBRARIES} ${PORTAUDIO_LIBRARIES}
 # If libsdr cannot be found, compile and link to libsdr shipped along
 # with this sources...
 IF(NOT LIBSDR_FOUND)
+ MESSAGE(STATUS "libsdr, libsdr-gui not found: Build them too...")
  INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/libsdr/src")
  INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}/libsdr/src")
  LINK_DIRECTORIES("${PROJECT_BINARY_DIR}/libsdr/src")
@@ -46,7 +47,6 @@ ENDIF(NOT LIBSDR_FOUND)
 
 # Set compiler flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS} -Wall -fPIC")
-set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb")
 set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ggdb")
 

@@ -2,6 +2,8 @@
 #define __SDR_RX_AUDIOPOSTPROC_HH__
 
 #include "subsample.hh"
+#include "portaudio.hh"
+#include "firfilter.hh"
 #include "gui/gui.hh"
 
 #include <QObject>
