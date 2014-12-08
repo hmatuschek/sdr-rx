@@ -7,5 +7,5 @@ set(sdr_rx_MOC_HEADERS
 qt5_wrap_cpp(sdr_rx_MOC_SOURCES ${sdr_rx_MOC_HEADERS})
 
 set(sdr_rx_HEADERS ${sdr_rx_MOC_HEADERS})
-add_executable(sdr_rx ${sdr_rx_SOURCES} ${sdr_rx_MOC_SOURCES})
-target_link_libraries(sdr_rx ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${LIBS} libsdr libsdr-gui)
+add_executable(sdr-rx ${sdr_rx_SOURCES} ${sdr_rx_MOC_SOURCES})
+target_link_libraries(sdr-rx ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${LIBS} libsdr libsdr-gui)

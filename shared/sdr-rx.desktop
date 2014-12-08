@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=SDR RX	
+GenericName=SDR Receiver
+Comment=A SDR receiver application using libsdr.
+Exec=sdr-rx
+Icon=/usr/share/icons/sdr-rx.svg
+Type=Application
+Categories=Education;Teaching;
+Terminal=false
+Encoding=UTF-8
