@@ -13,6 +13,7 @@ find_package(PortAudio REQUIRED)
 find_package(RTLSDR REQUIRED)
 
 find_package(Libsdr)
+find_package(LibsdrGui)
 
 ADD_DEFINITIONS(${Qt5Widgets_DEFINITIONS})
 
@@ -29,12 +30,11 @@ set(LIBS ${FFTW_LIBRARIES} ${FFTWSingle_LIBRARIES} ${PORTAUDIO_LIBRARIES}
 # If libsdr cannot be found, compile and link to libsdr shipped along
 # with this sources...
 IF(NOT LIBSDR_FOUND)
- MESSAGE(STATUS "libsdr, libsdr-gui not found: Build them too...")
+ MESSAGE(STATUS "libsdr not found: Build them too...")
  INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/libsdr/src")
  INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}/libsdr/src")
  LINK_DIRECTORIES("${PROJECT_BINARY_DIR}/libsdr/src")
- SET(LIBS ${LIBS} sdr sdr-gui)
- SET(SDR_WITH_QT5 ON)
+ SET(LIBS ${LIBS} sdr)
  SET(SDR_WITH_FFTW ON)
  SET(SDR_WITH_PORTAUDIO ON)
  SET(SDR_WITH_RTLSDR ON)
@@ -44,6 +44,20 @@ ELSE(NOT LIBSDR_FOUND)
  INCLUDE_DIRECTORIES(${LIBSDR_INCLUDE_DIRS})
  SET(LIBS ${LIBS} ${LIBSDR_LIBRARIES})
 ENDIF(NOT LIBSDR_FOUND)
+
+# If libsdr-gui cannot be found, compile and link to libsdr-gui shipped along
+# with this sources...
+IF(NOT LIBSDR_GUI_FOUND)
+ MESSAGE(STATUS "libsdr-gui not found: Build them too...")
+ INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/libsdr-gui/src")
+ INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}/libsdr-gui/src")
+ LINK_DIRECTORIES("${PROJECT_BINARY_DIR}/libsdr-gui/src")
+ SET(LIBS ${LIBS} sdr-gui)
+ SET(SDR_WITH_FFTW ON)
+ELSE(NOT LIBSDR_GUI_FOUND)
+ INCLUDE_DIRECTORIES(${LIBSDR_GUI_INCLUDE_DIRS})
+ SET(LIBS ${LIBS} ${LIBSDR_GUI_LIBRARIES})
+ENDIF(NOT LIBSDR_GUI_FOUND)
 
 # Set compiler flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS} -Wall -fPIC")
@@ -72,6 +86,10 @@ add_subdirectory(src)
 IF(NOT LIBSDR_FOUND)
   add_subdirectory(libsdr/src)
 ENDIF(NOT LIBSDR_FOUND)
+# ... and compile libsdr-gui if not found:
+IF(NOT LIBSDR_GUI_FOUND)
+  add_subdirectory(libsdr-gui/src)
+ENDIF(NOT LIBSDR_GUI_FOUND)
 
 #
 # Install logo and .desktop file under Linux:
