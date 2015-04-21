@@ -1,8 +1,8 @@
 Source: sdr-rx
 Priority: extra
 Maintainer: Hannes Matuschek <hmatuschek@gmail.com>
-Build-Depends: cdbs (>= 0.4.51), dh-exec, debhelper (>= 8.0.0), cmake, qtbase5-dev (>= 5.0), portaudio19-dev, librtlsdr-dev, fftw3-dev, libsdr-dev
-Standards-Version: 3.9.2
+Build-Depends: cdbs (>= 0.4.51), dh-exec, debhelper (>= 9.0.0), cmake, qtbase5-dev (>= 5.0), portaudio19-dev, librtlsdr-dev, fftw3-dev, libsdr-dev, libsdr-gui-dev
+Standards-Version: 3.9.5
 Section: hamradio
 Homepage: http://github.com/hmatuschek/sdr-rx
 
